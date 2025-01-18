@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 from matplotlib import rcParams, rc
+from matplotlib.gridspec import GridSpec
 
 def set_rc_params(fontsize=None):
     '''
@@ -35,6 +36,8 @@ def set_rc_params(fontsize=None):
     plt.rcParams.update({'axes.labelsize': fontsize})
     plt.rcParams.update({'axes.titlesize': fontsize})
     plt.rcParams.update({'legend.fontsize': int(fontsize-2)})
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['text.latex.preamble'] = r'\usepackage{amssymb}'
 
     return
 
@@ -42,14 +45,18 @@ set_rc_params(fontsize=28)
 
 bounds = 0, 1
 x = np.linspace(bounds[0], bounds[1], 1000)
-f_one = np.abs(-x)
-f_two = np.abs(1 - x)
+f_one = np.ones_like(x)
+f_two = np.zeros_like(x)
+f_three = x
 
 plt.figure(figsize=(10, 10))
-plt.plot(x, f_one, label=r"$|f_1(p)| = |-p|$", linestyle="--", linewidth=8)
-plt.plot(x, f_two, label=r"$|f_2(p)| = |1-p|$", linestyle="-", linewidth=8)
+plt.plot(x, f_one, label=r"$y = \mathbb{P}(f_Y(x) = h_Y(x) | h_P(x) = p) = 1$", linestyle="--", linewidth=8, color="black")
+plt.plot(x, f_two, label=r"$y = \mathbb{P}(f_Y(x) = h_Y(x) | h_P(x) = p) = 0$", linestyle="--", linewidth=8, color="black")
+plt.plot(x, f_three, label=r"$y = p$", linestyle="-", linewidth=8, color="red")
+plt.fill_between(x, f_one, f_three, color="blue", alpha=0.33)
+plt.fill_between(x, f_three, f_two, color="green", alpha=0.33)
 plt.xlabel(r"$p$")
-plt.ylabel(r"$|f(p)|$")
-plt.legend()
+plt.ylabel(r"$y(p)$")
+plt.legend(loc="center")
 plt.savefig("assets/bounds.pdf")
 

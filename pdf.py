@@ -61,8 +61,8 @@ gaussian3 = norm.pdf(x, loc=mean3, scale=sigma)
 
 # Plot the Gaussians
 plt.figure(figsize=(10, 8))
-plt.plot(x, combined_pdf, label="True Distribution", linewidth=8)
-plt.plot(x, gaussian3, label="Learned Gaussian", linestyle="--", linewidth=8)
+plt.plot(x, combined_pdf, label="True Distribution", linewidth=8, color="green")
+plt.plot(x, gaussian3, label="Learned Gaussian", linestyle="--", linewidth=8, color="blue")
 plt.xlabel("x", fontsize=28)
 plt.ylabel("P(x)", fontsize=28)
 plt.legend()

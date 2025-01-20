@@ -47,7 +47,7 @@ set_rc_params(fontsize=28)
 
 node_colors = ['lightblue', 'red']
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+fig, axes = plt.subplots(2, 2, figsize=(12, 12))
 
 G  = nx.DiGraph()
 
@@ -55,27 +55,58 @@ G.add_edges_from([(1, 1), (2, 2), (1, 2), (2, 1)])
 
 pos = {1: (-1, 0), 2: (1, 0)}
 
-nx.draw(G, pos, with_labels=True, ax=axes[0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3")
+nx.draw(G, pos, with_labels=True, ax=axes[0,0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3")
 
-axes[0].set_title("Orbit 1", fontsize=16)
+axes[0,0].set_title("Orbit 1", fontsize=16)
 
-for spine in axes[0].spines.values():
+for spine in axes[0,0].spines.values():
     spine.set_edgecolor('black')  # Set the border color
     spine.set_linewidth(2)       # Set the border thickness
 
 labels = [r'$y = 0$', r'$y = 1$']
-ylabels = [r'$0$', r'$p_1$', r'$1 - p_1$']
-axes[1].set_xticks([0, 1])
-axes[1].set_xticklabels(labels)
-axes[1].set_yticks([0, 0.7, 0.3])
-axes[1].set_yticklabels(ylabels)
-axes[1].bar([0, 1], [0.7, 0.3], color='red', edgecolor='black', linewidth=2)
-axes[1].set_title("Probability Density", fontsize=16)
-for spine in axes[1].spines.values():
+ylabels = [r'$0$', r'$p$', r'$1 - p$']
+axes[0,1].set_xticks([0, 1])
+axes[0,1].set_xticklabels(labels)
+axes[0,1].set_yticks([0, 0.7, 0.3])
+axes[0,1].set_yticklabels(ylabels)
+axes[0,1].bar([0, 1], [0.7, 0.3], color='lightgreen', edgecolor='black', linewidth=2)
+axes[0,1].set_title("Probability Density", fontsize=16)
+for spine in axes[0,1].spines.values():
     spine.set_edgecolor('black')
     spine.set_linewidth(2)
 
 # Adjust layout to avoid overlap
+
+G  = nx.DiGraph()
+
+G.add_edges_from([(1, 1), (2, 2), (1, 2), (2, 1)])
+
+pos = {1: (-1, 0), 2: (1, 0)}
+
+node_colors = ['lightblue', 'lightblue']
+
+nx.draw(G, pos, with_labels=True, ax=axes[1,0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3")
+
+axes[1,0].set_title("Orbit 2", fontsize=16)
+
+for spine in axes[1,0].spines.values():
+    spine.set_edgecolor('black')  # Set the border color
+    spine.set_linewidth(2)       # Set the border thickness
+
+labels = [r'$y = 0$', r'$y = 1$']
+ylabels = [r'$0$', r'$p$', r'$1 - p$']
+axes[1,1].set_xticks([0, 1])
+axes[1,1].set_xticklabels(labels)
+axes[1,1].set_yticks([0, 0.4, 0.6])
+axes[1,1].set_yticklabels(ylabels)
+axes[1,1].bar([0, 1], [0.4, 0.6], color='lightgreen', edgecolor='black', linewidth=2)
+axes[1,1].set_title("Probability Density", fontsize=16)
+for spine in axes[1,1].spines.values():
+    spine.set_edgecolor('black')
+    spine.set_linewidth(2)
+
+
+
 plt.tight_layout()
 
 

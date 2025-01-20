@@ -5,6 +5,7 @@ from matplotlib import rcParams, rc
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Rectangle
 import networkx as nx
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def set_rc_params(fontsize=None):
     '''
@@ -133,10 +134,13 @@ for i, p1 in enumerate(np.linspace(0, 1, 100)):
     for j, p2 in enumerate(np.linspace(0, 1, 100)):
         heatmap[i, j] = expected_value_h_p_upper_bound(p1, p2)
 
-axes[1,0].imshow(heatmap, cmap='viridis', extent=[0, 1, 0, 1], origin='lower')
+im = axes[1,0].imshow(heatmap, cmap='viridis', extent=[0, 1, 0, 1], origin='lower')
 axes[1,0].set_xlabel(r'$p_1$')
 axes[1,0].set_ylabel(r'$p_2$')
 axes[1,0].set_title(r'$\mathbb{E}[h(p)]$' + ' upper bound', fontsize=28)
+divider = make_axes_locatable(axes[1, 0])
+cax = divider.append_axes("right", size="5%", pad=0.1)  # Adjust size and padding as needed
+cb = fig.colorbar(im, cax=cax, orientation='vertical')
 
 plt.tight_layout()
 

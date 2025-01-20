@@ -118,12 +118,26 @@ axes[0,0].set_xticklabels(x_labels)
 axes[0,0].set_title("Probability Density q(x)", fontsize=28)
 axes[0,0].set_ylabel("q(x)")
 
-axes[1,0].set_visible(False)
+def expected_value_h_p_upper_bound(p1, p2):
+    p1 = np.maximum(p1, 1 - p1)
+    p2 = np.maximum(p2, 1 - p2)
+
+    orbit_one_sum = p1 * 0.3 + p1 * 0.4
+    orbit_two_sum = p2 * 0.1 + p2 * 0.2
+
+    fundamental_domain_sum = orbit_one_sum + orbit_two_sum
+    return fundamental_domain_sum
+
+heatmap = np.zeros((100, 100))
+for i, p1 in enumerate(np.linspace(0, 1, 100)):
+    for j, p2 in enumerate(np.linspace(0, 1, 100)):
+        heatmap[i, j] = expected_value_h_p_upper_bound(p1, p2)
+
+axes[1,0].imshow(heatmap, cmap='viridis', extent=[0, 1, 0, 1], origin='lower')
+axes[1,0].set_xlabel(r'$p_1$')
+axes[1,0].set_ylabel(r'$p_2$')
+axes[1,0].set_title(r'$\mathbb{E}[h(p)]$' + ' upper bound', fontsize=28)
 
 plt.tight_layout()
-
-
-
-
 
 plt.savefig("assets/example.pdf")

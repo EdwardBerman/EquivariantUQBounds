@@ -137,7 +137,7 @@ for i, p1 in enumerate(np.linspace(0, 1, 100)):
 im = axes[1,0].imshow(heatmap, cmap='viridis', extent=[0, 1, 0, 1], origin='lower')
 axes[1,0].set_xlabel(r'$p_1$')
 axes[1,0].set_ylabel(r'$p_2$')
-axes[1,0].set_title(r'$\mathbb{E}[h(p)]$' + ' upper bound', fontsize=28)
+axes[1,0].set_title(r'$\mathbb{E}[h_P(x)]$' + ' upper bound', fontsize=28)
 divider = make_axes_locatable(axes[1, 0])
 cax = divider.append_axes("right", size="5%", pad=0.1)  # Adjust size and padding as needed
 cb = fig.colorbar(im, cax=cax, orientation='vertical')

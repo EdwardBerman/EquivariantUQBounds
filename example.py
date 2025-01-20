@@ -46,6 +46,7 @@ def set_rc_params(fontsize=None):
 set_rc_params(fontsize=28)
 
 node_colors = ['lightblue', 'red']
+node_labels = {1: r'$x_0$', 2: r'$x_1$'}
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 12))
 
@@ -55,7 +56,7 @@ G.add_edges_from([(1, 1), (2, 2), (1, 2), (2, 1)])
 
 pos = {1: (-1, 0), 2: (1, 0)}
 
-nx.draw(G, pos, with_labels=True, ax=axes[0,0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3")
+nx.draw(G, pos, with_labels=True, ax=axes[0,0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3", labels=node_labels)
 
 axes[0,0].set_title("Orbit 1", fontsize=16)
 
@@ -64,7 +65,7 @@ for spine in axes[0,0].spines.values():
     spine.set_linewidth(2)       # Set the border thickness
 
 labels = [r'$y = 0$', r'$y = 1$']
-ylabels = [r'$0$', r'$p$', r'$1 - p$']
+ylabels = [r'$0$', r'$p_1$', r'$1 - p_1$']
 axes[0,1].set_xticks([0, 1])
 axes[0,1].set_xticklabels(labels)
 axes[0,1].set_yticks([0, 0.7, 0.3])
@@ -85,7 +86,9 @@ pos = {1: (-1, 0), 2: (1, 0)}
 
 node_colors = ['lightblue', 'lightblue']
 
-nx.draw(G, pos, with_labels=True, ax=axes[1,0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3")
+node_labels = {1: r'$x_2$', 2: r'$x_3$'}
+
+nx.draw(G, pos, with_labels=True, ax=axes[1,0], node_color=node_colors, edge_color='gray', node_size=2000, font_size=16,connectionstyle="arc3,rad=0.3", labels=node_labels)
 
 axes[1,0].set_title("Orbit 2", fontsize=16)
 
@@ -94,7 +97,7 @@ for spine in axes[1,0].spines.values():
     spine.set_linewidth(2)       # Set the border thickness
 
 labels = [r'$y = 0$', r'$y = 1$']
-ylabels = [r'$0$', r'$p$', r'$1 - p$']
+ylabels = [r'$0$', r'$p_2$', r'$1 - p_2$']
 axes[1,1].set_xticks([0, 1])
 axes[1,1].set_xticklabels(labels)
 axes[1,1].set_yticks([0, 0.4, 0.6])

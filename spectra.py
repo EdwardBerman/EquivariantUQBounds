@@ -368,18 +368,18 @@ noise = np.random.uniform(-0.1, 0.1, 4000)
 y = np.sin(2 * np.pi * (1/500)*x) + 1.2 + noise
 ax[0, 3].plot(x, y, color='black', label=r'$\vec{\sigma}_1$')
 ax[0, 3].set_yticks([])
-ax[0, 3].set_title(r'$\vec{\sigma}_1$')
+ax[0, 3].set_title(r'$\vec{\sigma^2}_1$')
 
 ax[1, 3].plot(x, y, color='black', label=r'$\vec{\sigma}_1$')
 ax[1, 3].set_yticks([])
-ax[1, 3].set_title(r'$\vec{\sigma}_1$')
+ax[1, 3].set_title(r'$\vec{\sigma^2}_1$')
 
 shift = 500
 y_new = (np.sin(2 * np.pi * (1/500)*x + shift) + 1.2 + noise) - np.sqrt(2)
 
 ax[2, 3].plot(x, y_new, color='black', label=r'$\vec{\sigma}_2$')
 ax[2, 3].set_yticks([])
-ax[2, 3].set_title(r'$\vec{\sigma}_2$')
+ax[2, 3].set_title(r'$\vec{\sigma^2}_2$')
 
 
 plt.savefig('assets/spectra.pdf', dpi=300)

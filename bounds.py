@@ -52,7 +52,7 @@ f_three = x
 plt.figure(figsize=(10, 10))
 plt.plot(x, f_one, label=r"$y = \mathbb{P}(f_Y(x) = h_Y(x) | h_P(x) = p) = 1$", linestyle="--", linewidth=8, color="black")
 plt.plot(x, f_two, label=r"$y = \mathbb{P}(f_Y(x) = h_Y(x) | h_P(x) = p) = 0$", linestyle="--", linewidth=8, color="black")
-plt.plot(x, f_three, label=r"$y = p$", linestyle="-", linewidth=8, color="red")
+plt.plot(x, f_three, label=r"$y = p$", linestyle="-", linewidth=8, color="orange")
 plt.fill_between(x, f_one, f_three, color="blue", alpha=0.33)
 plt.fill_between(x, f_three, f_two, color="green", alpha=0.33)
 plt.xlabel(r"$p$")

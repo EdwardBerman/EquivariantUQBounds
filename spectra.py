@@ -381,5 +381,6 @@ ax[2, 3].plot(x, y_new, color='black', label=r'$\vec{\sigma}_2$')
 ax[2, 3].set_yticks([])
 ax[2, 3].set_title(r'$\vec{\sigma^2}_2$')
 
+print((np.linalg.norm(water_spectra - average_spectra) + np.linalg.norm(water_spectra - sulfur_dioxide_y_interpolated)) / 2)
 
 plt.savefig('assets/spectra.pdf', dpi=300)

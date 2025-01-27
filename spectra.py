@@ -52,7 +52,7 @@ def set_rc_params(fontsize=None):
 
 set_rc_params(fontsize=40)
 
-fig, ax = plt.subplots(3, 4, figsize=(36, 36))
+fig, ax = plt.subplots(3, 4, figsize=(42, 36))
 
 G = nx.Graph()
 
@@ -223,12 +223,54 @@ nx.draw(
     ax=ax[1, 1]
 )
 
+G = nx.Graph()
+
+positions = {
+    (0, 0): (0, 0),
+    (-1, 0): (-1, 0),
+    (0, 1): (0, 1),
+    (1, 0): (1, 0),
+}
+
+node_labels = {
+    (0, 0): r'$N$',
+    (-1, 0): r'$H$',
+    (0, 1): r'$H$',
+    (1, 0): r'$H$',
+}
+
+for node, pos in positions.items():
+    G.add_node(node, pos=pos, label=node_labels[node])
+
+edges = [
+    ((0, 0), (-1, 0)),
+    ((0, 0), (0, 1)),
+    ((0, 0), (1, 0)),
+]
+G.add_edges_from(edges)
+
+
+node_sizes = [7200 if node == (0, 0) else 3600 for node in G.nodes()]
+node_colors = ["lightblue" if node == (0, 0) else "lightgreen" for node in G.nodes()]
+
+nx.draw(
+    G, 
+    pos=positions, 
+    with_labels=True, 
+    node_size=node_sizes,
+    node_color=node_colors,
+    font_weight="bold",
+    font_size=24,
+    ax=ax[2, 1]
+)
+
 
 
 ax[0, 0].set_title(r'$CH_4 (\times)$')
 ax[0, 1].set_title(r'$CH_4 (+)$')
 ax[1, 0].set_title(r'$H_20$')
 ax[1, 1].set_title(r'$SO_2$')
+ax[2, 1].set_title(r'$NH_3$')
 
 fig.tight_layout()
 subplots_to_include = [(0, 0), (0, 1), (1, 0), (1, 1)]
@@ -306,10 +348,20 @@ ax[1, 2].legend()
 ax[1, 2].set_title(r'$H_2O/SO_2$ Transition Spectra')
 
 ax[2, 2].plot(ammonia_spectra, color='black', label=r'f(NH$_3)$')
+ax[2, 2].plot(ammonia_spectra, color='red', label=r'$g(Orbit)$')
 ax[2, 2].legend()
 ax[2, 2].set_title(r'$NH_3$ Transition Spectra')
 
-ax[2, 1].axis('off')
+x = np.array([0, 1, 2, 3, 4])
+x_labels = [r'$CH_4(+)$', r'$CH_4(\times)$', r'$H_20$', r'$SO_2$', r'$NH_3$']
+y = np.array([0.125, 0.125, 0.125, 0.125, 0.5])
+ax[2,0].bar(x, y, color='lightgreen', edgecolor='black', linewidth=2)
+ax[2,0].set_xticks(x)
+ax[2,0].set_xticklabels(x_labels, fontsize=24)
+ax[2,0].set_title("Probability Density")
+ax[2,0].set_xlabel("Molecule")
+ax[2,0].set_ylabel("p(x)")
+
 
 x = np.linspace(0, 4000, 4000)
 noise = np.random.uniform(-0.1, 0.1, 4000)

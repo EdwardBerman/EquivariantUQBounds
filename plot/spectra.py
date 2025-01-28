@@ -348,7 +348,7 @@ ax[1, 2].legend()
 ax[1, 2].set_title(r'$H_2O/SO_2$ Transition Spectra')
 
 ax[2, 2].plot(ammonia_spectra, color='black', label=r'f(NH$_3)$')
-ax[2, 2].plot(ammonia_spectra, color='red', label=r'$g(Orbit)$')
+ax[2, 2].plot(ammonia_spectra, color='red', label=r'$h(Orbit)$')
 ax[2, 2].legend()
 ax[2, 2].set_title(r'$NH_3$ Transition Spectra')
 

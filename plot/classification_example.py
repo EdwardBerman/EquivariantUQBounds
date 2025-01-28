@@ -144,4 +144,4 @@ cb = fig.colorbar(im, cax=cax, orientation='vertical')
 
 plt.tight_layout()
 
-plt.savefig("assets/classification_example.pdf")
+plt.savefig("../assets/classification_example.pdf")

@@ -1,7 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import norm
 from matplotlib import rcParams, rc
+import numpy as np
 
 def set_rc_params(fontsize=None):
     '''
@@ -35,37 +34,20 @@ def set_rc_params(fontsize=None):
     plt.rcParams.update({'axes.labelsize': fontsize})
     plt.rcParams.update({'axes.titlesize': fontsize})
     plt.rcParams.update({'legend.fontsize': int(fontsize-2)})
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['text.latex.preamble'] = r'\usepackage{amssymb}'
 
     return
 
-set_rc_params(fontsize=16)
+set_rc_params(fontsize=20)
 
-# Define parameters for the Gaussians
-sigma = 1
-mean1 = -3 * sigma
-mean2 = 3 * sigma
-mean3 = 0  # Middle Gaussian
 
-# Generate x values
-x = np.linspace(-10, 10, 1000)
+x = np.linspace(0, 100, 100)
+y = (9.625/x + 1e-5) + 1 
 
-# Compute the original Gaussians
-gaussian1 = norm.pdf(x, loc=mean1, scale=sigma)
-gaussian2 = norm.pdf(x, loc=mean2, scale=sigma)
-
-# Renormalize to create a single PDF
-combined_pdf = (gaussian1 + gaussian2) / (np.trapz(gaussian1 + gaussian2, x))
-
-# Define the third Gaussian
-gaussian3 = norm.pdf(x, loc=mean3, scale=sigma)
-
-# Plot the Gaussians
-plt.figure(figsize=(10, 8))
-plt.plot(x, combined_pdf, label="True Distribution", linewidth=8, color="green")
-plt.plot(x, gaussian3, label="Learned Gaussian", linestyle="--", linewidth=8, color="blue")
-plt.xlabel("x", fontsize=28)
-plt.ylabel("P(x)", fontsize=28)
-plt.legend()
-plt.grid()
-plt.savefig("assets/gaussian_mixture.pdf")
+plt.figure(figsize=(9, 9))
+plt.plot(x, y)
+plt.xlabel(r'$||\vec{\sigma_1}||_2^2$')
+plt.ylabel('Upper Bound ENCE')
+plt.savefig('../assets/upper_ence.pdf')
 

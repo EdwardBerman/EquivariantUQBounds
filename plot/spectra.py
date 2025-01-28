@@ -383,4 +383,4 @@ ax[2, 3].set_title(r'$\vec{\sigma^2}_2$')
 
 print((np.linalg.norm(water_spectra - average_spectra) + np.linalg.norm(water_spectra - sulfur_dioxide_y_interpolated)) / 2)
 
-plt.savefig('assets/spectra.pdf', dpi=300)
+plt.savefig('../assets/spectra.pdf', dpi=300)

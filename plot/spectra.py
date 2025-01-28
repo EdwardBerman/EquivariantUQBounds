@@ -318,10 +318,10 @@ rect_small = patches.Rectangle(
 
 plt.subplots_adjust(top=0.92, bottom=0.08, left=0.08, right=0.92, hspace=0.3, wspace=0.3)
 
-methane_spectra = np.load('data/methane_spectra.npy')
-water_spectra = np.load('data/water_spectra.npy')
-sulfur_dioxide_spectra = np.load('data/sulfur_dioxide.npy')
-ammonia_spectra = np.load('data/amonia_spectra.npy')
+methane_spectra = np.load('../data/methane_spectra.npy')
+water_spectra = np.load('../data/water_spectra.npy')
+sulfur_dioxide_spectra = np.load('../data/sulfur_dioxide.npy')
+ammonia_spectra = np.load('../data/amonia_spectra.npy')
 
 sulfur_dioxide_spectra_x = sulfur_dioxide_spectra[:, 0]
 sulfur_dioxide_spectra_y = sulfur_dioxide_spectra[:, 1]

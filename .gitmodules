@@ -1,0 +1,3 @@
+[submodule "SIDDA"]
+	path = SIDDA
+	url = https://github.com/EdwardBerman/SIDDA.git

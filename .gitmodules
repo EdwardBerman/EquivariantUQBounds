@@ -1,3 +1,6 @@
 [submodule "SIDDA"]
 	path = SIDDA
 	url = https://github.com/EdwardBerman/SIDDA.git
+[submodule "ext_theory"]
+	path = ext_theory
+	url = https://github.com/EdwardBerman/ext_theory.git

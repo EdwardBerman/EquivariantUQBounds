@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import e3nn_jax as e3nn
 import flax
 import flax.linen as nn
+from e3nn_jax import IrrepsArray
 
 class EquivariantMLP(nn.Module):
     input_irreps: e3nn.Irreps
@@ -11,10 +12,19 @@ class EquivariantMLP(nn.Module):
 
     def setup(self):
         self.hidden_irreps = e3nn.Irreps(f"{self.hidden_dim}x1e")
-        self.linear_one = e3nn.flax.Linear(self.hidden_irreps, name='linear_one')
-        self.linear_two = e3nn.flax.Linear(self.output_irreps, name='linear_two')
+        self.linear_mu_one = e3nn.flax.Linear(self.hidden_irreps, name='linear_mu_one')
+        self.linear_mu_two = e3nn.flax.Linear(self.output_irreps, name='linear_mu_two')
+        self.linear_sigma_one = e3nn.flax.Linear(self.hidden_irreps, name='linear_sigma_one')
+        self.linear_sigma_two = e3nn.flax.Linear(self.output_irreps, name='linear_sigma_two')
+
 
     def __call__(self, x):
-        x = self.linear_one(x)
-        x = self.linear_two(x)
-        return x
+        mu = self.linear_mu_one(x)
+        mu = self.linear_mu_two(mu)
+
+        sigma_sq = self.linear_sigma_one(x)
+        sigma_sq = self.linear_sigma_two(sigma_sq)
+
+        sigma_sq_array = jax.nn.softplus(sigma_sq.array)
+        sigma_sq = e3nn.IrrepsArray(sigma_sq.irreps, sigma_sq_array)
+        return mu, sigma_sq

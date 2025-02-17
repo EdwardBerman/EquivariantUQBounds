@@ -20,21 +20,28 @@ def nll_loss(params, model, batch_input, batch_target):
     return jnp.mean(((mu_array - target_array) ** 2 / (2 * sigma_sq_array)) + 0.5 * jnp.log(sigma_sq_array))
 
 def train_model(model, key, input_locations, output_locations, n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs, batch_size, train_val_split):
-
     key, subkey = jax.random.split(key)
     n_samples = input_locations.shape[0]
-    n_train = n_samples - n_holdout
-    n_train = int(n_train * train_val_split)
-    n_val = n_samples - n_train
-    
-    train_indices = jax.random.permutation(subkey, jnp.arange(n_samples))[:n_train]
-    val_indices = jax.random.permutation(subkey, jnp.arange(n_samples))[n_train:]
+
+    n_test = n_holdout
+    n_train_val = n_samples - n_test
+
+    n_train = int(n_train_val * train_val_split)
+    n_val = n_train_val - n_train
+
+    perm = jax.random.permutation(subkey, jnp.arange(n_samples))
+    train_indices = perm[:n_train]
+    val_indices = perm[n_train:n_train + n_val]
+    test_indices = perm[n_train_val:]
 
     train_input_locations = e3nn.IrrepsArray(model.input_irreps, input_locations[train_indices])
     train_output_locations = output_locations[train_indices]
 
     val_input_locations = e3nn.IrrepsArray(model.input_irreps, input_locations[val_indices])
     val_output_locations = output_locations[val_indices]
+
+    test_input_locations = e3nn.IrrepsArray(model.input_irreps, input_locations[test_indices])
+    test_output_locations = output_locations[test_indices]
 
     dummy_input = train_input_locations[:1]
     parameters = model.init(key, dummy_input)
@@ -55,7 +62,6 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             batch_output_locations = train_output_locations[i:i+batch_size]
             batch_output_locations = e3nn.IrrepsArray(model.output_irreps, batch_output_locations)
 
-            #loss, grad = jax.value_and_grad(mse_loss)(parameters, model, batch_input_locations, batch_output_locations)
             loss, grad = jax.value_and_grad(nll_loss)(parameters, model, batch_input_locations, batch_output_locations)
 
             updates, opt_state = optimizer.update(grad, opt_state)
@@ -63,11 +69,6 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             train_loss += loss
 
         train_loss /= n_train
-
-
-        #val_prediction = model.apply(parameters, val_input_locations).array
-        #val_target = val_output_locations
-        #val_loss = jnp.mean((val_prediction - val_target) ** 2) 
 
         val_prediction_mu, val_prediction_sigma_sq = model.apply(parameters, val_input_locations)
         val_prediction_mu = val_prediction_mu.array
@@ -83,36 +84,71 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             epochs_no_improve = 0
         else:
             epochs_no_improve += 1
+            print(f"Epochs no improvement: {epochs_no_improve}")
 
         if epochs_no_improve > maximum_epochs_no_improve:
             print(f"Early stopping at epoch {epoch}")
             train_losses = np.array(train_losses)
             val_losses = np.array(val_losses)
-            np.save("train_losses.npy", train_losses)
-            np.save("val_losses.npy", val_losses)
-            val_prediction_mu_npy = val_prediction_mu.numpy()
-            val_prediction_sigma_sq_npy = val_prediction_sigma_sq.numpy()
-            val_target_npy = val_target.numpy()
-            val_inputs_npy = val_input_locations.array.numpy()
-            np.save("val_prediction_mu.npy", val_prediction_mu_npy)
-            np.save("val_prediction_sigma_sq.npy", val_prediction_sigma_sq_npy)
-            np.save("val_target.npy", val_target_npy)
-            np.save("val_inputs.npy", val_inputs_npy)
+
+            test_prediction_mu, test_prediction_sigma_sq = model.apply(parameters, test_input_locations)
+            test_prediction_mu = test_prediction_mu.array
+            test_prediction_sigma_sq = test_prediction_sigma_sq.array
+            test_target = test_output_locations
+            test_loss = jnp.mean(((test_prediction_mu - test_target) ** 2 / (2 * test_prediction_sigma_sq)) + 0.5 * jnp.log(test_prediction_sigma_sq))
+            print(f"Test Loss: {test_loss}")
+
+            test_prediction_mu_npy = np.array(test_prediction_mu)
+            test_prediction_sigma_sq_npy = np.array(test_prediction_sigma_sq)
+            test_target_npy = np.array(test_target)
+            test_inputs_npy = np.array(test_input_locations.array)
+            np.save("../data/test_prediction_mu.npy", test_prediction_mu_npy)
+            np.save("../data/test_prediction_sigma_sq.npy", test_prediction_sigma_sq_npy)
+            np.save("../data/test_target.npy", test_target_npy)
+            np.save("../data/test_inputs.npy", test_inputs_npy)
+
+            np.save("../data/train_losses.npy", train_losses)
+            np.save("../data/val_losses.npy", val_losses)
+            val_prediction_mu_npy = np.array(val_prediction_mu)
+            val_prediction_sigma_sq_npy = np.array(val_prediction_sigma_sq)
+            val_target_npy = np.array(val_target)
+            val_inputs_npy = np.array(val_input_locations.array)
+            np.save("../data/val_prediction_mu.npy", val_prediction_mu_npy)
+            np.save("../data/val_prediction_sigma_sq.npy", val_prediction_sigma_sq_npy)
+            np.save("../data/val_target.npy", val_target_npy)
+            np.save("../data/val_inputs.npy", val_inputs_npy)
             break
 
         if epoch == maximum_epochs - 1:
             train_losses = np.array(train_losses)
             val_losses = np.array(val_losses)
-            np.save("train_losses.npy", train_losses)
-            np.save("val_losses.npy", val_losses)
-            val_prediction_mu_npy = val_prediction_mu.numpy()
-            val_prediction_sigma_sq_npy = val_prediction_sigma_sq.numpy()
-            val_target_npy = val_target.numpy()
-            val_inputs_npy = val_input_locations.array.numpy()
-            np.save("val_prediction_mu.npy", val_prediction_mu_npy)
-            np.save("val_prediction_sigma_sq.npy", val_prediction_sigma_sq_npy)
-            np.save("val_target.npy", val_target_npy)
-            np.save("val_inputs.npy", val_inputs_npy)
+
+            test_prediction_mu, test_prediction_sigma_sq = model.apply(parameters, test_input_locations)
+            test_prediction_mu = test_prediction_mu.array
+            test_prediction_sigma_sq = test_prediction_sigma_sq.array
+            test_target = test_output_locations
+            test_loss = jnp.mean(((test_prediction_mu - test_target) ** 2 / (2 * test_prediction_sigma_sq)) + 0.5 * jnp.log(test_prediction_sigma_sq))
+            print(f"Test Loss: {test_loss}")
+
+            test_prediction_mu_npy = np.array(test_prediction_mu)
+            test_prediction_sigma_sq_npy = np.array(test_prediction_sigma_sq)
+            test_target_npy = np.array(test_target)
+            test_inputs_npy = np.array(test_input_locations.array)
+            np.save("../data/test_prediction_mu.npy", test_prediction_mu_npy)
+            np.save("../data/test_prediction_sigma_sq.npy", test_prediction_sigma_sq_npy)
+            np.save("../data/test_target.npy", test_target_npy)
+            np.save("../data/test_inputs.npy", test_inputs_npy)
+
+            np.save("../data/train_losses.npy", train_losses)
+            np.save("../data/val_losses.npy", val_losses)
+            val_prediction_mu_npy = np.array(val_prediction_mu)
+            val_prediction_sigma_sq_npy = np.array(val_prediction_sigma_sq)
+            val_target_npy = np.array(val_target)
+            val_inputs_npy = np.array(val_input_locations.array)
+            np.save("../data/val_prediction_mu.npy", val_prediction_mu_npy)
+            np.save("../data/val_prediction_sigma_sq.npy", val_prediction_sigma_sq_npy)
+            np.save("../data/val_target.npy", val_target_npy)
+            np.save("../data/val_inputs.npy", val_inputs_npy)
             print(f"Maximum epochs reached at epoch {epoch}")
 
         print(f"Epoch: {epoch}, Train Loss: {train_loss}, Val Loss: {val_loss}")

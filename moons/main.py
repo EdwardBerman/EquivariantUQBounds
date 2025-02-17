@@ -36,6 +36,9 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
 
     best_val_loss = jnp.inf
     epochs_no_improve = 0
+    
+    train_losses = []
+    val_losses = []
 
     for epoch in range(maximum_epochs):
         key, subkey = jax.random.split(key)
@@ -56,7 +59,10 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
 
         val_prediction = model.apply(parameters, val_input_locations).array
         val_target = val_output_locations
-        val_loss = jnp.mean((val_prediction - val_target) ** 2)
+        val_loss = jnp.mean((val_prediction - val_target) ** 2) 
+
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -65,7 +71,19 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             epochs_no_improve += 1
 
         if epochs_no_improve > maximum_epochs_no_improve:
+            print(f"Early stopping at epoch {epoch}")
+            train_losses = np.array(train_losses)
+            val_losses = np.array(val_losses)
+            np.save("train_losses.npy", train_losses)
+            np.save("val_losses.npy", val_losses)
             break
+
+        if epoch == maximum_epochs - 1:
+            train_losses = np.array(train_losses)
+            val_losses = np.array(val_losses)
+            np.save("train_losses.npy", train_losses)
+            np.save("val_losses.npy", val_losses)
+            print(f"Maximum epochs reached at epoch {epoch}")
 
         print(f"Epoch: {epoch}, Train Loss: {train_loss}, Val Loss: {val_loss}")
 

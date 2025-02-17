@@ -7,10 +7,10 @@ import optax
 from e3nn_jax import IrrepsArray
 
 def mse_loss(params, model, batch_input, batch_target):
-    prediction = model.apply(params, batch_input)
-    pred_array = prediction.array
+    mu, sigma_sq = model.apply(params, batch_input)
+    mu_array = mu.array
     target_array = batch_target.array
-    return jnp.mean((pred_array - target_array) ** 2)
+    return jnp.mean((mu_array - target_array) ** 2)
 
 def nll_loss(params, model, batch_input, batch_target):
     mu, sigma_sq = model.apply(params, batch_input)
@@ -18,6 +18,17 @@ def nll_loss(params, model, batch_input, batch_target):
     sigma_sq_array = sigma_sq.array
     target_array = batch_target.array
     return jnp.mean(((mu_array - target_array) ** 2 / (2 * sigma_sq_array)) + 0.5 * jnp.log(sigma_sq_array))
+
+def beta_nll_loss(params, model, batch_input, batch_target, beta=1.0):
+    mu, sigma_sq = model.apply(params, batch_input)
+    mu_array = mu.array
+    sigma_sq_array = sigma_sq.array
+    target_array = batch_target.array
+    sigma_sq_array_beta = jax.lax.stop_gradient(sigma_sq_array) ** beta
+    return jnp.mean(sigma_sq_array_beta *(((mu_array - target_array) ** 2 / (2 * sigma_sq_array)) + 0.5 * jnp.log(sigma_sq_array)))
+
+def combined_loss(params, model, batch_input, batch_target, beta=1.0):
+    return mse_loss(params, model, batch_input, batch_target) + beta_nll_loss(params, model, batch_input, batch_target, beta=beta)
 
 def train_model(model, key, input_locations, output_locations, n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs, batch_size, train_val_split):
     key, subkey = jax.random.split(key)
@@ -62,7 +73,7 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             batch_output_locations = train_output_locations[i:i+batch_size]
             batch_output_locations = e3nn.IrrepsArray(model.output_irreps, batch_output_locations)
 
-            loss, grad = jax.value_and_grad(nll_loss)(parameters, model, batch_input_locations, batch_output_locations)
+            loss, grad = jax.value_and_grad(combined_loss)(parameters, model, batch_input_locations, batch_output_locations)
 
             updates, opt_state = optimizer.update(grad, opt_state)
             parameters = optax.apply_updates(parameters, updates)
@@ -74,7 +85,7 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
         val_prediction_mu = val_prediction_mu.array
         val_prediction_sigma_sq = val_prediction_sigma_sq.array
         val_target = val_output_locations
-        val_loss = jnp.mean(((val_prediction_mu - val_target) ** 2 / (2 * val_prediction_sigma_sq)) + 0.5 * jnp.log(val_prediction_sigma_sq))
+        val_loss = jnp.mean((val_prediction_sigma_sq *((val_prediction_mu - val_target) ** 2 / (2 * val_prediction_sigma_sq)) + 0.5 * jnp.log(val_prediction_sigma_sq))) + jnp.mean((val_prediction_mu - val_target) ** 2)
 
         train_losses.append(train_loss)
         val_losses.append(val_loss)
@@ -95,28 +106,28 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             test_prediction_mu = test_prediction_mu.array
             test_prediction_sigma_sq = test_prediction_sigma_sq.array
             test_target = test_output_locations
-            test_loss = jnp.mean(((test_prediction_mu - test_target) ** 2 / (2 * test_prediction_sigma_sq)) + 0.5 * jnp.log(test_prediction_sigma_sq))
+            test_loss = jnp.mean(((test_prediction_mu - test_target) ** 2 / (2 * test_prediction_sigma_sq)) + 0.5 * jnp.log(test_prediction_sigma_sq)) + jnp.mean((test_prediction_mu - test_target) ** 2)
             print(f"Test Loss: {test_loss}")
 
             test_prediction_mu_npy = np.array(test_prediction_mu)
             test_prediction_sigma_sq_npy = np.array(test_prediction_sigma_sq)
             test_target_npy = np.array(test_target)
             test_inputs_npy = np.array(test_input_locations.array)
-            np.save("../data/test_prediction_mu.npy", test_prediction_mu_npy)
-            np.save("../data/test_prediction_sigma_sq.npy", test_prediction_sigma_sq_npy)
-            np.save("../data/test_target.npy", test_target_npy)
-            np.save("../data/test_inputs.npy", test_inputs_npy)
+            np.save("../data/test_prediction_mu_equivariant.npy", test_prediction_mu_npy)
+            np.save("../data/test_prediction_sigma_sq_equivariant.npy", test_prediction_sigma_sq_npy)
+            np.save("../data/test_target_equivariant.npy", test_target_npy)
+            np.save("../data/test_inputs_equivariant.npy", test_inputs_npy)
 
-            np.save("../data/train_losses.npy", train_losses)
-            np.save("../data/val_losses.npy", val_losses)
+            np.save("../data/train_losses_equivariant.npy", train_losses)
+            np.save("../data/val_losses_equivariant.npy", val_losses)
             val_prediction_mu_npy = np.array(val_prediction_mu)
             val_prediction_sigma_sq_npy = np.array(val_prediction_sigma_sq)
             val_target_npy = np.array(val_target)
             val_inputs_npy = np.array(val_input_locations.array)
-            np.save("../data/val_prediction_mu.npy", val_prediction_mu_npy)
-            np.save("../data/val_prediction_sigma_sq.npy", val_prediction_sigma_sq_npy)
-            np.save("../data/val_target.npy", val_target_npy)
-            np.save("../data/val_inputs.npy", val_inputs_npy)
+            np.save("../data/val_prediction_mu_equivariant.npy", val_prediction_mu_npy)
+            np.save("../data/val_prediction_sigma_sq_equivariant.npy", val_prediction_sigma_sq_npy)
+            np.save("../data/val_target_equivariant.npy", val_target_npy)
+            np.save("../data/val_inputs_equivariant.npy", val_inputs_npy)
             break
 
         if epoch == maximum_epochs - 1:
@@ -134,21 +145,21 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
             test_prediction_sigma_sq_npy = np.array(test_prediction_sigma_sq)
             test_target_npy = np.array(test_target)
             test_inputs_npy = np.array(test_input_locations.array)
-            np.save("../data/test_prediction_mu.npy", test_prediction_mu_npy)
-            np.save("../data/test_prediction_sigma_sq.npy", test_prediction_sigma_sq_npy)
-            np.save("../data/test_target.npy", test_target_npy)
-            np.save("../data/test_inputs.npy", test_inputs_npy)
+            np.save("../data/test_prediction_mu_equivariant.npy", test_prediction_mu_npy)
+            np.save("../data/test_prediction_sigma_sq_equivariant.npy", test_prediction_sigma_sq_npy)
+            np.save("../data/test_target_equivariant.npy", test_target_npy)
+            np.save("../data/test_inputs_equivariant.npy", test_inputs_npy)
 
-            np.save("../data/train_losses.npy", train_losses)
-            np.save("../data/val_losses.npy", val_losses)
+            np.save("../data/train_losses_equivariant.npy", train_losses)
+            np.save("../data/val_losses_equivariant.npy", val_losses)
             val_prediction_mu_npy = np.array(val_prediction_mu)
             val_prediction_sigma_sq_npy = np.array(val_prediction_sigma_sq)
             val_target_npy = np.array(val_target)
             val_inputs_npy = np.array(val_input_locations.array)
-            np.save("../data/val_prediction_mu.npy", val_prediction_mu_npy)
-            np.save("../data/val_prediction_sigma_sq.npy", val_prediction_sigma_sq_npy)
-            np.save("../data/val_target.npy", val_target_npy)
-            np.save("../data/val_inputs.npy", val_inputs_npy)
+            np.save("../data/val_prediction_mu_equivariant.npy", val_prediction_mu_npy)
+            np.save("../data/val_prediction_sigma_sq_equivariant.npy", val_prediction_sigma_sq_npy)
+            np.save("../data/val_target_equivariant.npy", val_target_npy)
+            np.save("../data/val_inputs_equivariant.npy", val_inputs_npy)
             print(f"Maximum epochs reached at epoch {epoch}")
 
         print(f"Epoch: {epoch}, Train Loss: {train_loss}, Val Loss: {val_loss}")

@@ -56,6 +56,7 @@ def plot_moons(input_locations, true_output_locations, output_location_means, ou
     ax[1].scatter(output_location_means[:, 0], output_location_means[:, 1], c="b", label="Predicted", alpha=0.5)
     sigma_sq_x = output_location_vars[:, 0]
     sigma_sq_y = output_location_vars[:, 1]
+    mean_sigma_norm = np.mean(np.linalg.norm(output_location_vars, axis=1))
 
     for xi, yi, xe, ye in zip(output_location_means[:, 0], output_location_means[:, 1], sigma_sq_x, sigma_sq_y):
         ellipse = Ellipse(xy=(xi, yi), 
@@ -66,7 +67,7 @@ def plot_moons(input_locations, true_output_locations, output_location_means, ou
                           linestyle="--",
                           alpha=0.7)
         ax[1].add_patch(ellipse)
-    ax[1].set_title("MLP Output")
+    ax[1].set_title(f"MLP Output, AB = {mean_sigma_norm:.2f}")
     ax[1].set_xlabel("y1")
     ax[1].set_ylabel("y2")
     x_axis = np.linspace(-1.5, 2.5, 100)
@@ -89,6 +90,8 @@ def plot_moons(input_locations, true_output_locations, output_location_means, ou
     sigma_sq_x = equivariant_output_location_vars[:, 0]
     sigma_sq_y = equivariant_output_location_vars[:, 1]
 
+    mean_sigma_norm = np.mean(np.linalg.norm(equivariant_output_location_vars, axis=1))
+
     for xi, yi, xe, ye in zip(equivariant_output_location_means[:, 0], equivariant_output_location_means[:, 1], sigma_sq_x, sigma_sq_y):
         ellipse = Ellipse(xy=(xi, yi), 
                           width=2*xe, 
@@ -98,7 +101,7 @@ def plot_moons(input_locations, true_output_locations, output_location_means, ou
                           linestyle="--",
                           alpha=0.7)
         ax[3].add_patch(ellipse)
-    ax[3].set_title("Equivariant Output")
+    ax[3].set_title(f"Equivariant Output, AB = {mean_sigma_norm:.2f}")
     ax[3].set_xlabel("y1")
     ax[3].set_ylabel("y2")
     ax[3].legend()
@@ -112,7 +115,7 @@ def plot_moons(input_locations, true_output_locations, output_location_means, ou
     plt.savefig("../assets/uq_moons.pdf")
 
 if __name__ == "__main__":
-    set_rc_params(fontsize=28)
+    set_rc_params(fontsize=36)
 
     input_locations_mlp = np.load("../data/test_inputs_MLP.npy")
     true_output_locations_mlp = np.load("../data/test_target_MLP.npy")

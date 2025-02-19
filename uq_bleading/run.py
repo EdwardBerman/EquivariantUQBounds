@@ -121,6 +121,7 @@ class QM9DataModule:
             random seed for data split, by default 420
         """
         assert sum([train_ratio, val_ratio, test_ratio]) == 1
+        self._dataset = self.dataset()
         self.target_idx = target_idx
         self.num_examples = len(self.dataset())
         rng = np.random.default_rng(seed)
@@ -152,7 +153,7 @@ class QM9DataModule:
         return data
 
     def loader(self, split, **loader_kwargs) -> DataLoader:
-        dataset = self.dataset()[split]
+        dataset = self._dataset()[split]
         return DataLoader(dataset, **loader_kwargs)
 
     def train_loader(self, **loader_kwargs) -> DataLoader:

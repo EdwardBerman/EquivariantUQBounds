@@ -153,7 +153,7 @@ class QM9DataModule:
         return data
 
     def loader(self, split, **loader_kwargs) -> DataLoader:
-        dataset = self._dataset()[split]
+        dataset = self._dataset[split]
         return DataLoader(dataset, **loader_kwargs)
 
     def train_loader(self, **loader_kwargs) -> DataLoader:

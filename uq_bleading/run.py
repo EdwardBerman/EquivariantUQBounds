@@ -135,11 +135,21 @@ class QM9DataModule:
             int(self.num_examples * (train_ratio + val_ratio)) : self.num_examples
         ]
 
+        train_targets = self._dataset.data.y[self.train_split]
+        self.y_mean = train_targets.mean()
+        self.y_std = train_targets.std()
+
+        self._dataset.transform = self.normalize_data
+
     def dataset(self, transform=None) -> QM9:
         dataset = QM9(DATA, pre_transform=add_complete_graph_edge_index, force_reload=True)
 
         dataset.data.y = dataset.data.y[:, self.target_idx].view(-1, 1)
         return dataset
+
+    def normalize_data(self, data: Data) -> Data:
+        data.y = (data.y - self.y_mean) / self.y_std
+        return data
 
     def loader(self, split, **loader_kwargs) -> DataLoader:
         dataset = self.dataset()[split]

@@ -121,8 +121,8 @@ class QM9DataModule:
             random seed for data split, by default 420
         """
         assert sum([train_ratio, val_ratio, test_ratio]) == 1
-        self._dataset = self.dataset()
         self.target_idx = target_idx
+        self._dataset = self.dataset()
         self.num_examples = len(self.dataset())
         rng = np.random.default_rng(seed)
         self.shuffled_index = rng.permutation(self.num_examples)

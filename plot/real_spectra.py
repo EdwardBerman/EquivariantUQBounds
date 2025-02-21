@@ -89,7 +89,7 @@ for number, file_list in sorted(grouped_files.items()):
     ax[1].plot(x_axis, al_uq, 'o', color='blue', label='Aleatoric Uncertainty',linewidth=2, markersize=3)
     ax[1].plot(x_axis, ep_uq, 'o', color='green', label='Epistemic Uncertainty',linewidth=2, markersize=3)
     ax[1].set_xlabel('Normalized Wavenumber')
-    ax[1].set_ylabel(r'$\log_{10}$ Uncertainty')
+    ax[1].set_ylabel('Uncertainty')
     ax[1].set_title(f'{mol_name_data}')
     ax[1].legend(fontsize=8)
 

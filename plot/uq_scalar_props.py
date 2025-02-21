@@ -61,7 +61,6 @@ for group, files in grouped_files.items():
     data = {}
 
     for f in files:
-        print(f)
         if 'egnn' in f:
             if "aleatoric" in f:
                 data['equivariant_aleatoric'] = np.load(f, allow_pickle=True)
@@ -105,9 +104,12 @@ for group, files in grouped_files.items():
     baseline_mae = np.mean(np.abs(baseline_targets - baseline_predictions))
     equivariant_mae = np.mean(np.abs(equivariant_targets - equivariant_predictions))
 
-    print(f"MAE baseline: {baseline_mae}")
-    print(f"MAE equivariant: {equivariant_mae}")
-    print(f"Aleatoric UQ baseline: {np.mean(baseline_aleatoric)}")
-    print(f"Aleatoric UQ equivariant: {np.mean(equivariant_aleatoric)}")
-    print("=" * 80)
+    if np.abs(baseline_mae - equivariant_mae) < 0.25:
+        group_number = group
+        print(group_number)
+        print(f"MAE baseline: {baseline_mae}")
+        print(f"MAE equivariant: {equivariant_mae}")
+        print(f"Aleatoric UQ baseline: {np.mean(baseline_aleatoric)}")
+        print(f"Aleatoric UQ equivariant: {np.mean(equivariant_aleatoric)}")
+        print("=" * 80)
 

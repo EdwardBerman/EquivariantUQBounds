@@ -22,6 +22,8 @@ n_samples: int = 1000
 noise: float = 0.1
 ```
 
+Then run `train_MLP.py` and `train_equivariant.py` to train the models
+
 ## Swiss Roll
 
 Instructions are in the `ext_theory` Git submodule on how to run the "spiral" experiment

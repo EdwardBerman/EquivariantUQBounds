@@ -138,7 +138,7 @@ if __name__ == "__main__":
     noise_map = ax[0,2].imshow(random_noise, cmap='coolwarm', vmin=-0.2, vmax=0.2)
     ax[0,2].set_xticks([])
     ax[0,2].set_yticks([])
-    ax[0,2].set_title('Confidence')
+    ax[0,2].set_title('Uncertainty')
     #cbar = fig.colorbar(noise_map, ax=ax[0,2], fraction=0.046, pad=0.04)
     #cbar.ax.tick_params(labelsize=16)
     for i in range(random_noise.shape[0]):
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     noise_map = ax[1,2].imshow(random_noise_rotated, cmap='coolwarm', vmin=-0.2, vmax=0.2)
     ax[1,2].set_xticks([])
     ax[1,2].set_yticks([])
-    ax[1,2].set_title('Rotated Confidence')
+    ax[1,2].set_title('Rotated Uncertainty')
     #cbar = fig.colorbar(noise_map, ax=ax[1,2], fraction=0.046, pad=0.04)
     #cbar.ax.tick_params(labelsize=16)
     for i in range(random_noise_rotated.shape[0]):

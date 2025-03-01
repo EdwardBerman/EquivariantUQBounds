@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from matplotlib import rcParams, rc
 from matplotlib.gridspec import GridSpec
+import tqdm
 
 def set_rc_params(fontsize=None):
     '''
@@ -46,12 +47,9 @@ def set_rc_params(fontsize=None):
 
 set_rc_params(fontsize=20)
 
-
 files = glob.glob('../data/test/*.npy')
 grouped_files = defaultdict(list)
 pattern = re.compile(r'_(\d+)\.npy$')
-
-aleatoric_uncertainty = []
 
 for file in files:
     match = pattern.search(file)
@@ -59,6 +57,12 @@ for file in files:
         number = match.group(1)
         grouped_files[number].append(file)
 
+labels_np = np.zeros((32, 3501))
+mean_pred_np = np.zeros((32, 3501))
+al_uq_np = np.zeros((32, 3501))
+ep_uq_np = np.zeros((32, 3501))
+
+count = 0
 for number, file_list in sorted(grouped_files.items()):
     labels_file = next(f for f in file_list if "labels" in f)
     mean_pred_file = next(f for f in file_list if "mean_pred" in f)
@@ -69,31 +73,65 @@ for number, file_list in sorted(grouped_files.items()):
     labels = np.load(labels_file)
     mean_pred = np.load(mean_pred_file)
     al_uq = np.load(al_uq_file)
-    
-    aleatoric_uncertainty.append(np.linalg.norm(al_uq)**2)
-
     ep_uq = np.load(ep_uq_file)
-    mol_name_data = np.load(mol_name_file, allow_pickle=True)
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    labels_np[count] = labels
+    mean_pred_np[count] = mean_pred
+    al_uq_np[count] = al_uq
+    ep_uq_np[count] = ep_uq
+    count += 1
 
-    x_axis = np.linspace(0, 1, len(mean_pred))
+print("Max label: ", np.max(labels_np))
+print("Max mean_pred: ", np.max(mean_pred_np))
+print("Min label: ", np.min(labels_np))
+print("Min mean_pred: ", np.min(mean_pred_np))
 
-    ax[0].plot(x_axis, mean_pred, 'o', color='black', label='Predictions',linewidth=1, markersize=3)
-    ax[0].plot(x_axis, labels, 'o', color='red', label='Labels',linewidth=1, markersize=3)
-    ax[0].set_xlabel('Normalized Wavenumber')
-    ax[0].set_ylabel(r'$\log_{10}$ Intensity')
-    ax[0].set_title(f'{mol_name_data}')
-    ax[0].legend(fontsize=8)
 
-    ax[1].plot(x_axis, al_uq, 'o', color='blue', label='Aleatoric Uncertainty',linewidth=2, markersize=3)
-    ax[1].plot(x_axis, ep_uq, 'o', color='green', label='Epistemic Uncertainty',linewidth=2, markersize=3)
-    ax[1].set_xlabel('Normalized Wavenumber')
-    ax[1].set_ylabel('Uncertainty')
-    ax[1].set_title(f'{mol_name_data}')
-    ax[1].legend(fontsize=8)
+def ENCE(y_true, y_pred, y_pred_std, bins=10):
+    max_stds = np.max(y_pred_std, axis=0)
+    min_stds = np.min(y_pred_std, axis=0)
+    bins_edges = np.linspace(min_stds, max_stds, bins+1)
 
-    plt.tight_layout()
-    plt.savefig(f'../assets/spectra/{number}.pdf')
+    ENCE = 0.0
+    number_vecs = []
 
-print(f'Mean aleatoric uncertainty: {np.mean(aleatoric_uncertainty)}')
+    for i in range(bins_edges.shape[1] - 1):
+        for j in range(bins_edges.shape[0]):
+            mask = (y_pred_std[:, j] >= bins_edges[j, i]) & (y_pred_std[:, j] < bins_edges[j, i+1])
+            number_vectors = np.sum(mask)
+            if number_vectors == 0:
+                continue
+            number_vecs.append(number_vectors)
+            y_true_bin = y_true[mask]
+            y_pred_bin = y_pred[mask]
+            y_pred_std_bin = y_pred_std[mask]
+
+            ENCE += np.mean(np.linalg.norm(y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(y_pred_std_bin, axis=1))**2 * number_vectors
+    
+    return ENCE / y_true.shape[0] , np.mean(number_vecs)
+
+ENCE_bins = []
+avg_bin_counts = []
+
+for bins in tqdm.tqdm(range(1, 20, 1)):
+    ENCE_in_bins, avg_bin_count = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
+    #ENCE_in_bins = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
+    ENCE_bins.append(ENCE_in_bins)
+    avg_bin_counts.append(avg_bin_count)
+print(ENCE_bins)
+print(avg_bin_counts)
+
+fig = plt.figure(figsize=(18, 6))
+plt.plot(range(1, 20, 1), ENCE_bins)
+plt.xlabel("Number of bins")
+plt.ylabel("ENCE")
+plt.savefig("../assets/ENCE.pdf")
+plt.close()
+
+fig = plt.figure(figsize=(12, 6))
+plt.plot(range(1, 20, 1), avg_bin_counts)
+plt.xlabel("Number of bins")
+plt.ylabel("Average Vector Per Bin")
+plt.savefig("../assets/avg_bin_counts.pdf")
+
+

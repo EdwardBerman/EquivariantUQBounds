@@ -44,7 +44,7 @@ def set_rc_params(fontsize=None):
 
 if __name__ == "__main__":
 
-    set_rc_params(fontsize=20)
+    set_rc_params(fontsize=36)
 
     board = np.array([
         ['X', ' ', 'O'],

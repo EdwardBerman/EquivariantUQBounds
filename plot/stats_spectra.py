@@ -45,7 +45,7 @@ def set_rc_params(fontsize=None):
 
     return
 
-set_rc_params(fontsize=20)
+set_rc_params(fontsize=28)
 
 files = glob.glob('../data/test/*.npy')
 grouped_files = defaultdict(list)
@@ -113,23 +113,20 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10):
 ENCE_bins = []
 avg_bin_counts = []
 
-for bins in tqdm.tqdm(range(1, 20, 1)):
+for bins in tqdm.tqdm(range(1, 100, 1)):
     ENCE_in_bins, avg_bin_count = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
-    #ENCE_in_bins = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
     ENCE_bins.append(ENCE_in_bins)
     avg_bin_counts.append(avg_bin_count)
-print(ENCE_bins)
-print(avg_bin_counts)
 
-fig = plt.figure(figsize=(18, 6))
-plt.plot(range(1, 20, 1), ENCE_bins)
+fig = plt.figure(figsize=(24, 12))
+plt.plot(range(1, 100, 1), ENCE_bins, label="ENCE")
 plt.xlabel("Number of bins")
 plt.ylabel("ENCE")
 plt.savefig("../assets/ENCE.pdf")
 plt.close()
 
-fig = plt.figure(figsize=(12, 6))
-plt.plot(range(1, 20, 1), avg_bin_counts)
+fig = plt.figure(figsize=(24, 12))
+plt.plot(range(1, 100, 1), avg_bin_counts)
 plt.xlabel("Number of bins")
 plt.ylabel("Average Vector Per Bin")
 plt.savefig("../assets/avg_bin_counts.pdf")

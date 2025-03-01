@@ -78,7 +78,7 @@ for number, file_list in sorted(grouped_files.items()):
     labels_np[count] = labels
     mean_pred_np[count] = mean_pred
     al_uq_np[count] = al_uq
-    ep_uq_np[count] = ep_uq
+    ep_uq_np[count] = np.sqrt(ep_uq)
     count += 1
 
 print("Max label: ", np.max(labels_np))

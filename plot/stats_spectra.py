@@ -93,6 +93,8 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10):
     bins_edges = np.linspace(min_stds, max_stds, bins+1)
 
     ENCE = 0.0
+    upper_bound = 1.0
+    max_error = 5 * np.ones_like(y_true)
     number_vecs = []
 
     for i in range(bins_edges.shape[1] - 1):
@@ -105,23 +107,28 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10):
             y_true_bin = y_true[mask]
             y_pred_bin = y_pred[mask]
             y_pred_std_bin = y_pred_std[mask]
+            max_error_bin = max_error[mask]
 
-            ENCE += np.mean(np.linalg.norm(y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(y_pred_std_bin, axis=1))**2 * number_vectors
+            ENCE += number_vectors * np.mean(np.linalg.norm(y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(y_pred_std_bin, axis=1))**2 
+            upper_bound += number_vectors * np.mean(np.linalg.norm(y_pred_std_bin - max_error_bin, axis=1))**2/ np.mean(np.linalg.norm(y_pred_std_bin, axis=1))**2 #* number_vectors
     
-    return ENCE / y_true.shape[0] , np.mean(number_vecs)
+    return ENCE / y_true.shape[0] , np.mean(number_vecs), upper_bound / y_true.shape[0]
 
 ENCE_bins = []
 avg_bin_counts = []
+upper_bounds = []
 
 for bins in tqdm.tqdm(range(1, 100, 1)):
-    ENCE_in_bins, avg_bin_count = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
+    ENCE_in_bins, avg_bin_count, ub = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
     ENCE_bins.append(ENCE_in_bins)
     avg_bin_counts.append(avg_bin_count)
+    upper_bounds.append(ub)
 
 fig = plt.figure(figsize=(24, 12))
 plt.plot(range(1, 100, 1), ENCE_bins, label="ENCE")
 plt.xlabel("Number of bins")
 plt.ylabel("ENCE")
+plt.yscale("log")
 plt.savefig("../assets/ENCE.pdf")
 plt.close()
 
@@ -129,6 +136,24 @@ fig = plt.figure(figsize=(24, 12))
 plt.plot(range(1, 100, 1), avg_bin_counts)
 plt.xlabel("Number of bins")
 plt.ylabel("Average Vector Per Bin")
+plt.yscale("log")
 plt.savefig("../assets/avg_bin_counts.pdf")
+plt.close()
 
+fig = plt.figure(figsize=(24, 12))
+plt.plot(range(1, 100, 1), upper_bounds)
+plt.xlabel("Number of bins")
+plt.ylabel("Upper Bound")
+plt.yscale("log")
+plt.savefig("../assets/upper_bound.pdf")
+plt.close()
+
+fig = plt.figure(figsize=(24, 12))
+plt.plot(range(1, 100, 1), ENCE_bins, label="Computed ENCE")
+plt.plot(range(1, 100, 1), upper_bounds, label="Upper Bound")
+plt.xlabel("Number of bins")
+plt.ylabel("ENCE")
+plt.yscale("log")
+plt.legend()
+plt.savefig("../assets/upper_bound_vs_computed.pdf")
 

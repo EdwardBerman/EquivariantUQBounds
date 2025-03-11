@@ -158,7 +158,6 @@ def train_model(model, key, input_locations, output_locations, n_holdout, minimu
         print(f"Epoch: {epoch}, Train Loss: {train_loss}, Val Loss: {val_loss}")
 
 
-
 if __name__ == "__main__":
     input_locations = np.load("../data/input_locations_90_degree_offset_100000_samples_0.1_noise.npy")
     output_locations = np.load("../data/output_locations_90_degree_offset_100000_samples_0.1_noise.npy")

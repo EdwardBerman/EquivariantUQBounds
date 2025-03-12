@@ -111,6 +111,15 @@ def create_synthetic_vector_field(n_samples, noise_level, dataset_type="spiral")
             x, y = pos
             vector_field[i, 0] = -y
             vector_field[i, 1] = x
+    elif dataset_type == "sine":
+        vector_field = np.zeros_like(input_positions)
+        for i, pos in enumerate(input_positions):
+            x, y = pos
+            x_y_vec = np.array([x, y])
+            norm = np.linalg.norm(x_y_vec)
+            sin_norm = np.sin(norm)
+            vector_field[i, 0] = -x*(sin_norm**2)
+            vector_field[i, 1] = -y*(sin_norm**2)
     
     elif dataset_type == "divergent":
         # divergent/convergent field (equivariant under rotations)

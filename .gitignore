@@ -1,1 +1,3 @@
 data/
+results/
+vector_field_regression/__pycache__/

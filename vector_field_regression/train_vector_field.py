@@ -9,6 +9,49 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from simple_parsing import ArgumentParser
 from models import CorrectEquivariantVectorFieldModel, IncorrectEquivariantVectorFieldModel, MLPVectorFieldModel
+from matplotlib import rcParams, rc
+from matplotlib.gridspec import GridSpec
+import matplotlib.patches as patches
+
+
+
+def set_rc_params(fontsize=None):
+    '''
+    Set figure parameters
+    '''
+
+    if fontsize is None:
+        fontsize=16
+    else:
+        fontsize=int(fontsize)
+
+    rc('font',**{'family':'serif'})
+    rc('text', usetex=True)
+
+    #plt.rcParams.update({'figure.facecolor':'w'})
+    plt.rcParams.update({'axes.linewidth': 1.3})
+    plt.rcParams.update({'xtick.labelsize': fontsize})
+    plt.rcParams.update({'ytick.labelsize': fontsize})
+    plt.rcParams.update({'xtick.major.size': 8})
+    plt.rcParams.update({'xtick.major.width': 1.3})
+    plt.rcParams.update({'xtick.minor.visible': True})
+    plt.rcParams.update({'xtick.minor.width': 1.})
+    plt.rcParams.update({'xtick.minor.size': 6})
+    plt.rcParams.update({'xtick.direction': 'out'})
+    plt.rcParams.update({'ytick.major.width': 1.3})
+    plt.rcParams.update({'ytick.major.size': 8})
+    plt.rcParams.update({'ytick.minor.visible': True})
+    plt.rcParams.update({'ytick.minor.width': 1.})
+    plt.rcParams.update({'ytick.minor.size':6})
+    plt.rcParams.update({'ytick.direction':'out'})
+    plt.rcParams.update({'axes.labelsize': fontsize})
+    plt.rcParams.update({'axes.titlesize': fontsize})
+    plt.rcParams.update({'legend.fontsize': int(fontsize-2)})
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['text.latex.preamble'] = r'\usepackage{amssymb}'
+
+    return
+
 
 # Loss functions
 def mse_loss(params, model, batch_input, batch_target):
@@ -405,7 +448,7 @@ def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions
                          uncertainty, cmap='viridis', 
                          angles='xy', scale_units='xy', scale=1, alpha=0.8)
     cbar = plt.colorbar(scatter, ax=ax[1])
-    cbar.set_label('Uncertainty (σ)')
+    cbar.set_label(r'Uncertainty $||\sigma||$')
     ax[1].set_title(f'Predicted Vector Field with Uncertainty - {title}')
     ax[1].set_xlabel('X')
     ax[1].set_ylabel('Y')
@@ -518,6 +561,7 @@ if __name__ == "__main__":
     
     # Set random seed
     key = jax.random.PRNGKey(random_seed)
+    set_rc_params(fontsize=28)
     
     # Create directories
     os.makedirs(data_dir, exist_ok=True)

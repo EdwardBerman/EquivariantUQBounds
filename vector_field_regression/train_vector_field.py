@@ -518,6 +518,8 @@ def plot_rotation_results(rotation_results, save_dir=None):
     else:
         plt.show()
 
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     
@@ -711,9 +713,14 @@ if __name__ == "__main__":
     )
     
     # Plot rotation test results
+    #rotation_results = {
+        #'Correct Equivariant': correct_rotation_results,
+        #'Incorrect Equivariant': incorrect_rotation_results,
+        #'MLP': mlp_rotation_results
+    #}
+    
     rotation_results = {
         'Correct Equivariant': correct_rotation_results,
-        'Incorrect Equivariant': incorrect_rotation_results,
         'MLP': mlp_rotation_results
     }
     

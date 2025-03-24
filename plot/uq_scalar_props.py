@@ -109,7 +109,7 @@ for group, files in grouped_files.items():
         print(group_number)
         print(f"MAE baseline: {baseline_mae}")
         print(f"MAE equivariant: {equivariant_mae}")
-        print(f"Aleatoric UQ baseline: {np.mean(baseline_aleatoric**2)}")
-        print(f"Aleatoric UQ equivariant: {np.mean(equivariant_aleatoric**2)}")
+        print(f"Aleatoric UQ baseline: {np.mean(baseline_aleatoric)}")
+        print(f"Aleatoric UQ equivariant: {np.mean(equivariant_aleatoric)}")
         print("=" * 80)
 

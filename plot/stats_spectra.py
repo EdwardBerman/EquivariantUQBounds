@@ -47,7 +47,8 @@ def set_rc_params(fontsize=None):
 
 set_rc_params(fontsize=28)
 
-files = glob.glob('../data/test/*.npy')
+#files = glob.glob('../data/test/*.npy') 
+files = glob.glob('../data/final_qm9_rotated/*.npy') # final_qm9_rotated
 grouped_files = defaultdict(list)
 pattern = re.compile(r'_(\d+)\.npy$')
 
@@ -109,8 +110,8 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10):
             y_pred_std_bin = y_pred_std[mask]
             max_error_bin = max_error[mask]
 
-            ENCE += number_vectors * np.mean(np.linalg.norm(y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(y_pred_std_bin, axis=1))**2 
-            upper_bound += number_vectors * np.mean(np.linalg.norm(y_pred_std_bin - max_error_bin, axis=1))**2/ np.mean(np.linalg.norm(y_pred_std_bin, axis=1))**2 #* number_vectors
+            ENCE += number_vectors * np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1))**2 
+            upper_bound += number_vectors * np.mean(np.linalg.norm(max_error_bin, axis=1))**2/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1))**2 #* number_vectors
     
     return ENCE / y_true.shape[0] , np.mean(number_vecs), upper_bound / y_true.shape[0]
 

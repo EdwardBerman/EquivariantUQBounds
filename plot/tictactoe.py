@@ -158,5 +158,6 @@ if __name__ == "__main__":
             ax[1,2].text(j, i, f'{random_noise_rotated[i, j]:.2f}', ha='center', va='center', color='k')
 
     plt.savefig('../assets/tictactoe.pdf', bbox_inches='tight')
+    plt.savefig('../assets/tictactoe.png', bbox_inches='tight')
 
 

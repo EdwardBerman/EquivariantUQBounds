@@ -58,10 +58,12 @@ for file in files:
         number = match.group(1)
         grouped_files[number].append(file)
 
-labels_np = np.zeros((32, 3501))
-mean_pred_np = np.zeros((32, 3501))
-al_uq_np = np.zeros((32, 3501))
-ep_uq_np = np.zeros((32, 3501))
+labels_np = np.zeros((128, 3501))
+mean_pred_np = np.zeros((128, 3501))
+al_uq_np = np.zeros((128, 3501))
+ep_uq_np = np.zeros((128, 3501))
+
+labels_augmented_np = np.zeros((128, 3501))
 
 count = 0
 for number, file_list in sorted(grouped_files.items()):
@@ -71,12 +73,23 @@ for number, file_list in sorted(grouped_files.items()):
     ep_uq_file = next(f for f in file_list if "ep_std_dev" in f)
     mol_name_file = next(f for f in file_list if "mol_smile_name" in f)
 
+    if "0.npy" in labels_file:
+        labels_augmented = np.load(labels_file)
+        labels_augmented = -labels_augmented
+        labels_augmented_np[count] = labels_augmented
+    if "2.npy" in labels_file:
+        labels_augmented = np.load(labels_file)
+        labels_augmented = -labels_augmented
+        labels_augmented_np[count] = labels_augmented
+    else:
+        labels_augmented = np.load(labels_file)
+        labels_augmented_np[count] = labels_augmented
+        
     labels = np.load(labels_file)
+    labels_np[count] = labels
     mean_pred = np.load(mean_pred_file)
     al_uq = np.load(al_uq_file)
     ep_uq = np.load(ep_uq_file)
-
-    labels_np[count] = labels
     mean_pred_np[count] = mean_pred
     al_uq_np[count] = al_uq
     ep_uq_np[count] = np.sqrt(ep_uq)
@@ -86,9 +99,10 @@ print("Max label: ", np.max(labels_np))
 print("Max mean_pred: ", np.max(mean_pred_np))
 print("Min label: ", np.min(labels_np))
 print("Min mean_pred: ", np.min(mean_pred_np))
+print("Median label: ", np.median(labels_np))
 
 
-def ENCE(y_true, y_pred, y_pred_std, bins=10):
+def ENCE(y_true, y_pred, y_pred_std, bins=10, max_label=3.3, min_label=-3.3):
     max_stds = np.max(y_pred_std, axis=0)
     min_stds = np.min(y_pred_std, axis=0)
     bins_edges = np.linspace(min_stds, max_stds, bins+1)
@@ -108,28 +122,37 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10):
             y_true_bin = y_true[mask]
             y_pred_bin = y_pred[mask]
             y_pred_std_bin = y_pred_std[mask]
-            max_error_bin = max_error[mask]
+            diff_max = np.abs(max_label - y_true_bin)
+            diff_min = np.abs(min_label - y_true_bin)
+            max_error_bin = np.where(diff_max < diff_min, diff_min, diff_max)
 
             ENCE += number_vectors * np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1))**2 
             upper_bound += number_vectors * np.mean(np.linalg.norm(max_error_bin, axis=1))**2/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1))**2 #* number_vectors
     
     return ENCE / y_true.shape[0] , np.mean(number_vecs), upper_bound / y_true.shape[0]
 
-ENCE_bins = []
+ENCE_bins_correct_augmentation = []
+ENCE_bins_incorrect_augmentation = []
 avg_bin_counts = []
-upper_bounds = []
+upper_bound_correct = []
+upper_bound_incorrect = []
 
 for bins in tqdm.tqdm(range(1, 100, 1)):
-    ENCE_in_bins, avg_bin_count, ub = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
-    ENCE_bins.append(ENCE_in_bins)
+    ENCE_in_bins, avg_bin_count, ub_c = ENCE(labels_np, mean_pred_np, ep_uq_np, bins=bins)
+    ENCE_bins_correct_augmentation.append(ENCE_in_bins)
+
+    ENCE_in_bins, avg_bin_count, ub_i = ENCE(labels_augmented_np, mean_pred_np, ep_uq_np, bins=bins)
+    ENCE_bins_incorrect_augmentation.append(ENCE_in_bins)
+
     avg_bin_counts.append(avg_bin_count)
-    upper_bounds.append(ub)
+    upper_bound_correct.append(ub_c)
+    upper_bound_incorrect.append(ub_i)
 
 fig = plt.figure(figsize=(24, 12))
-plt.plot(range(1, 100, 1), ENCE_bins, label="ENCE")
+plt.plot(range(1, 100, 1), ENCE_bins_correct_augmentation, label="ENCE")
 plt.xlabel("Number of bins")
 plt.ylabel("ENCE")
-plt.yscale("log")
+#plt.yscale("log")
 plt.savefig("../assets/ENCE.pdf")
 plt.close()
 
@@ -150,8 +173,10 @@ plt.savefig("../assets/upper_bound.pdf")
 plt.close()
 
 fig = plt.figure(figsize=(24, 12))
-plt.plot(range(1, 100, 1), ENCE_bins, label="Computed ENCE")
-plt.plot(range(1, 100, 1), upper_bounds, label="Upper Bound")
+plt.plot(range(1, 100, 1), ENCE_bins_correct_augmentation, label="Computed ENCE (Correct Augmentation)")
+plt.plot(range(1, 100, 1), ENCE_bins_incorrect_augmentation, label="Computed ENCE (Incorrect Augmentation)")
+plt.plot(range(1, 100, 1), upper_bound_correct, label="Upper Bound (Correct Augmentation)")
+plt.plot(range(1, 100, 1), upper_bound_incorrect, label="Upper Bound (Incorrect Augmentation)")
 plt.xlabel("Number of bins")
 plt.ylabel("ENCE")
 plt.yscale("log")

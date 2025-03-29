@@ -91,7 +91,7 @@ for number, file_list in sorted(grouped_files.items()):
     al_uq = np.load(al_uq_file)
     ep_uq = np.load(ep_uq_file)
     mean_pred_np[count] = mean_pred
-    al_uq_np[count] = al_uq
+    al_uq_np[count] = np.sqrt(al_uq)
     ep_uq_np[count] = np.sqrt(ep_uq)
     count += 1
 
@@ -126,8 +126,8 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10, max_label=3.3, min_label=-3.3):
             diff_min = np.abs(min_label - y_true_bin)
             max_error_bin = np.where(diff_max < diff_min, diff_min, diff_max)
 
-            ENCE += number_vectors * np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1))**2/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1))**2 
-            upper_bound += number_vectors * np.mean(np.linalg.norm(max_error_bin, axis=1))**2/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1))**2 #* number_vectors
+            ENCE += number_vectors * np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1)**2)/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1)**2) 
+            upper_bound += number_vectors * np.mean(np.linalg.norm(max_error_bin, axis=1)**2)/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1)**2) #* number_vectors
     
     return ENCE / y_true.shape[0] , np.mean(number_vecs), upper_bound / y_true.shape[0]
 

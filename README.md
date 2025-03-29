@@ -10,21 +10,16 @@ First, clone the repo (and the submodules!) via
 
 `git clone --recurse-submodules https://github.com/EdwardBerman/EquivariantUQBounds.git`
 
-## Moons
+## Vector Field Regression
 
-For the moons experiment / example, first make the dataset with 
+```
+# Generate a dataset (or use an existing one)
+python make_vector_field_dataset.py --dataset_type spiral --n_samples 2000 --noise 0.1 --visualize True
 
-`python make_dataset.py`
-
-There are optional keywords 
-
-```py
-degrees: int = 90
-n_samples: int = 1000
-noise: float = 0.1
+# Run the full experiment
+python train_vector_field.py --dataset_type spiral --n_samples 2000 --noise 0.1 --hidden_dim 32 --maximum_epochs 100
 ```
 
-Then run `train_MLP.py` and `train_equivariant.py` to train the models
 
 ## Swiss Roll
 

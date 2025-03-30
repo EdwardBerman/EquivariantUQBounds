@@ -73,6 +73,7 @@ class IncorrectEquivariantVectorFieldModel(nn.Module):
     input_irreps: e3nn.Irreps
     output_irreps: e3nn.Irreps
     hidden_dim: int
+    break_type: str = "perturbation"  # Options: "perturbation", "flip", "scale", "rotate", "mix"
     
     def setup(self):
         self.hidden_irreps = e3nn.Irreps(f"{self.hidden_dim}x0e + {self.hidden_dim}x1e")
@@ -85,46 +86,81 @@ class IncorrectEquivariantVectorFieldModel(nn.Module):
         self.lin_hid_sigma = e3nn.flax.Linear(self.hidden_irreps)
         self.lin_out_sigma = e3nn.flax.Linear(self.output_irreps)
         
-        # multiple non-equivariant dense layers to break rotational symmetry
+        # Non-equivariant layers
         self.non_equiv_dense1 = nn.Dense(self.hidden_dim)
         self.non_equiv_dense2 = nn.Dense(self.hidden_dim)
 
     def _nonlinear_equiv(self, x: IrrepsArray) -> IrrepsArray:
-        """
-        Intended as an 'equivariant' nonlinearity, but since we already 
-        introduce a break in eq elsewhere, it won't preserve overall symmetry.
-        Here we do a typical e3nn approach:
-        - ReLU on scalar (0e) channels
-        - Identity on vector (1e) channels
-        """
+        """Standard equivariant nonlinearity"""
         scalars = x.filter(keep="0e")
         vectors = x.filter(keep="1e")
         
-        # ReLU on scalar part
         scalars_activated = IrrepsArray(
             scalars.irreps,
             jax.nn.relu(scalars.array)
         )
         return e3nn.concatenate([scalars_activated, vectors], axis=-1)
 
-    def __call__(self, x: IrrepsArray) -> Tuple[IrrepsArray, IrrepsArray]:
-        # convert to a standard array for non-equivariant processing
+    def _break_equivariance(self, x: IrrepsArray) -> IrrepsArray:
+        """Apply different types of equivariance breaking"""
         x_array = x.array
         
-        # pass through multiple non-equivariant layers
-        # this step breaks rotational equivariance by ignoring irreps structure
-        h = self.non_equiv_dense1(x_array)
-        h = jax.nn.relu(h)
-        h = self.non_equiv_dense2(h)
-        h = jax.nn.relu(h)
+        if self.break_type == "perturbation":
+            # Original perturbation approach
+            h = self.non_equiv_dense1(x_array)
+            h = jax.nn.relu(h)
+            h = self.non_equiv_dense2(h)
+            h = jax.nn.relu(h)
+            x_broken_array = x_array + 0.3 * h[:, : x_array.shape[-1]]
+            
+        elif self.break_type == "flip":
+            # Flip vectors in certain regions of space (position-dependent)
+            # This creates a discontinuity in the vector field
+            mask = (jnp.sum(x_array**2, axis=-1) > 0.5).astype(float)
+            mask = mask.reshape(-1, 1)
+            x_broken_array = x_array * (1 - 2 * mask)
+            
+        elif self.break_type == "scale":
+            # Scale vectors differently based on their position
+            # This breaks the norm-preservation property of equivariance
+            radius = jnp.sqrt(jnp.sum(x_array**2, axis=-1, keepdims=True))
+            scale_factor = 1.0 + jnp.sin(radius * 3.0)
+            x_broken_array = x_array * scale_factor
+            
+        elif self.break_type == "rotate":
+            # Apply a position-dependent rotation to vectors
+            # This breaks equivariance by making rotations inconsistent
+            x_norm = jnp.linalg.norm(x_array, axis=-1, keepdims=True) + 1e-8
+            angle = jnp.sum(x_array, axis=-1, keepdims=True) * 0.5
+            cos_angle = jnp.cos(angle)
+            sin_angle = jnp.sin(angle)
+            
+            # 2D rotation matrix applied to each vector
+            x_rotated_0 = cos_angle * x_array[..., 0:1] - sin_angle * x_array[..., 1:2]
+            x_rotated_1 = sin_angle * x_array[..., 0:1] + cos_angle * x_array[..., 1:2]
+            x_broken_array = jnp.concatenate([x_rotated_0, x_rotated_1], axis=-1)
+            
+        elif self.break_type == "mix":
+            # Mix different components in a non-equivariant way
+            # Process through non-equivariant layers
+            h = self.non_equiv_dense1(x_array)
+            h = jax.nn.relu(h)
+            h = self.non_equiv_dense2(h)
+            h = jax.nn.tanh(h)  # bounded activation
+            
+            # Create a mixture of original and transformed
+            x_broken_array = x_array * (1.0 - jnp.abs(h[:, :1])) + h[:, :x_array.shape[-1]] * h[:, :1]
         
-        # introduce a small non-equivariant perturbation to the original x
-        x_broken_array = x_array + 0.1 * h[:, : x_array.shape[-1]]
+        else:
+            x_broken_array = x_array  # No breaking if unknown type
+            
+        return IrrepsArray(x.irreps, x_broken_array)
+
+    def __call__(self, x: IrrepsArray) -> Tuple[IrrepsArray, IrrepsArray]:
+        # Break equivariance in interesting ways
+        x_broken = self._break_equivariance(x)
         
-        # convert the broken array back to an IrrepsArray
-        x_broken = IrrepsArray(x.irreps, x_broken_array)
-        
-        # proceed with "equivariant" transformations :D
+        # Proceed with "equivariant" transformations
         h_mu = self.lin_in_mu(x_broken)
         h_mu = self._nonlinear_equiv(h_mu)
         h_mu = self.lin_hid_mu(h_mu)

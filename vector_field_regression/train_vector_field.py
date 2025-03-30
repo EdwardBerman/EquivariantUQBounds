@@ -12,6 +12,7 @@ from models import CorrectEquivariantVectorFieldModel, IncorrectEquivariantVecto
 from matplotlib import rcParams, rc
 from matplotlib.gridspec import GridSpec
 import matplotlib.patches as patches
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 
@@ -384,7 +385,7 @@ def test_with_rotations(model, model_type, parameters, test_inputs, test_targets
         'calibration': calibration_results
     }
 
-def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions_sigma_sq, title, save_path=None):
+def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions_sigma_sq, title, save_path=None, vmin=None, vmax=None):
     """
     Visualize vector field predictions with uncertainty.
     
@@ -395,6 +396,8 @@ def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions
         predictions_sigma_sq: Predicted uncertainty
         title: Plot title
         save_path: Path to save the figure
+        vmin: Minimum value for uncertainty colormap (for consistent scaling)
+        vmax: Maximum value for uncertainty colormap (for consistent scaling)
     """
     # Extract arrays if needed
     if hasattr(test_inputs, 'array'):
@@ -442,10 +445,16 @@ def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions
     ax[0].grid(True)
     ax[0].axis('equal')
     
+    # Create a normalizer for consistent color scaling
+    if vmin is not None and vmax is not None:
+        norm = plt.Normalize(vmin, vmax)
+    else:
+        norm = plt.Normalize(uncertainty.min(), uncertainty.max())
+    
     # Plot predictions with uncertainty
     scatter = ax[1].quiver(test_inputs_array[:, 0], test_inputs_array[:, 1], 
                          predictions_mu_array[:, 0], predictions_mu_array[:, 1], 
-                         uncertainty, cmap='viridis', 
+                         uncertainty, cmap='viridis', norm=norm,
                          angles='xy', scale_units='xy', scale=1, alpha=0.8)
     cbar = plt.colorbar(scatter, ax=ax[1])
     cbar.set_label(r'Uncertainty $||\sigma||$')
@@ -456,6 +465,249 @@ def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions
     ax[1].axis('equal')
     
     # Adjust layout
+    plt.tight_layout()
+    
+    # Save or show
+    if save_path:
+        plt.savefig(save_path)
+        plt.close()
+    else:
+        plt.show()
+
+def visualize_all_predictions(test_inputs_dict, test_targets_dict, 
+                             predictions_mu_dict, predictions_sigma_sq_dict, 
+                             test_mse_dict, save_path=None):
+    """
+    Visualize vector field predictions from all models in one figure with error bar comparison.
+    
+    Args:
+        test_inputs_dict: Dictionary of test input positions for each model type
+        test_targets_dict: Dictionary of true vector fields for each model type
+        predictions_mu_dict: Dictionary of predicted vector fields for each model type
+        predictions_sigma_sq_dict: Dictionary of predicted uncertainties for each model type
+        test_mse_dict: Dictionary of test MSE values for each model type
+        save_path: Path to save the figure
+    """
+    # Define model mapping for display purposes
+    model_display = {
+        'mlp': 'Mlp',
+        'equivariant': 'Correct',
+        'invariant': 'Incorrect'
+    }
+    
+    # Define the order of models to display
+    model_order = ['mlp', 'equivariant', 'invariant']
+    
+    # Create a figure with 1×4 layout (ground truth + 3 models)
+    fig = plt.figure(figsize=(24, 6))
+    
+    # Use GridSpec to create a 1×4 grid with space for colorbar
+    gs = GridSpec(1, 4, figure=fig)
+    
+    # Ground truth subplot
+    ax_truth = fig.add_subplot(gs[0, 0])
+    
+    # Process and plot each model
+    model_axes = []
+    all_errors = []  # To collect error data for the error bar plot
+    all_uncertainties = []  # To collect all uncertainty values for consistent scaling
+    
+    # Create axes for each model
+    ax_mlp = fig.add_subplot(gs[0, 1])
+    model_axes.append((ax_mlp, 'mlp'))
+    
+    ax_equivariant = fig.add_subplot(gs[0, 2])
+    model_axes.append((ax_equivariant, 'equivariant'))
+    
+    ax_invariant = fig.add_subplot(gs[0, 3])
+    model_axes.append((ax_invariant, 'invariant'))
+    
+    # First, get ground truth from any model (they should all have the same ground truth)
+    first_model = model_order[0]
+    if first_model in test_inputs_dict:
+        # Extract arrays if needed
+        if hasattr(test_inputs_dict[first_model], 'array'):
+            truth_inputs_array = test_inputs_dict[first_model].array
+        else:
+            truth_inputs_array = test_inputs_dict[first_model]
+            
+        if hasattr(test_targets_dict[first_model], 'array'):
+            truth_targets_array = test_targets_dict[first_model].array
+        else:
+            truth_targets_array = test_targets_dict[first_model]
+        
+        # Extract 2D components if inputs are in 3D
+        if truth_inputs_array.shape[1] > 2:
+            truth_inputs_array = truth_inputs_array[:, :2]
+        if truth_targets_array.shape[1] > 2:
+            truth_targets_array = truth_targets_array[:, :2]
+        
+        # Plot ground truth
+        ax_truth.quiver(truth_inputs_array[:, 0], truth_inputs_array[:, 1], 
+                   truth_targets_array[:, 0], truth_targets_array[:, 1], 
+                   angles='xy', scale_units='xy', scale=1, color='blue', alpha=0.8)
+        ax_truth.set_title('Ground Truth Vector Field')
+        ax_truth.set_xlabel('X')
+        ax_truth.set_ylabel('Y', labelpad=-5)  # Bring Y label closer to the axis
+        ax_truth.grid(True)
+        
+        # Set aspect ratio to be equal (square plot)
+        ax_truth.set_aspect('equal')
+        
+        # Set consistent limits for all plots
+        min_x, max_x = -5.5, 5.5
+        min_y, max_y = -5.5, 5.5
+        ax_truth.set_xlim(min_x, max_x)
+        ax_truth.set_ylim(min_y, max_y)
+    
+    # First pass to collect all uncertainty values for consistent scaling
+    model_data = {}
+    for model_type in model_order:
+        if model_type in test_inputs_dict:
+            # Extract arrays if needed
+            if hasattr(test_inputs_dict[model_type], 'array'):
+                inputs_array = test_inputs_dict[model_type].array
+            else:
+                inputs_array = test_inputs_dict[model_type]
+                
+            if hasattr(test_targets_dict[model_type], 'array'):
+                targets_array = test_targets_dict[model_type].array
+            else:
+                targets_array = test_targets_dict[model_type]
+                
+            if hasattr(predictions_mu_dict[model_type], 'array'):
+                pred_mu_array = predictions_mu_dict[model_type].array
+                pred_sigma_sq_array = predictions_sigma_sq_dict[model_type].array
+            else:
+                pred_mu_array = predictions_mu_dict[model_type]
+                pred_sigma_sq_array = predictions_sigma_sq_dict[model_type]
+            
+            # Extract 2D components if inputs are in 3D
+            if inputs_array.shape[1] > 2:
+                inputs_array = inputs_array[:, :2]
+            if targets_array.shape[1] > 2:
+                targets_array = targets_array[:, :2]
+            if pred_mu_array.shape[1] > 2:
+                pred_mu_array = pred_mu_array[:, :2]
+            if pred_sigma_sq_array.shape[1] > 2:
+                pred_sigma_sq_array = pred_sigma_sq_array[:, :2]
+            
+            # Calculate uncertainty as standard deviation
+            pred_sigma = np.sqrt(pred_sigma_sq_array)
+            uncertainty = np.linalg.norm(pred_sigma, axis=1)
+            all_uncertainties.extend(uncertainty)
+            
+            # Calculate error for error bar comparison
+            error = np.linalg.norm(pred_mu_array - targets_array, axis=1)
+            all_errors.append((model_type, error, uncertainty))
+            
+            # Store processed data for second pass
+            model_data[model_type] = {
+                'inputs': inputs_array,
+                'targets': targets_array,
+                'pred_mu': pred_mu_array,
+                'uncertainty': uncertainty
+            }
+    
+    # Determine global min and max uncertainty for consistent color scaling
+    vmin = min(all_uncertainties) if all_uncertainties else 0
+    vmax = max(all_uncertainties) if all_uncertainties else 1
+    
+    # Create normalizer for consistent color scaling
+    norm = plt.Normalize(vmin, vmax)
+    
+    # Store all quiver plots to create a shared colorbar
+    quiver_plots = []
+    
+    # Set consistent limits for all plots
+    min_x, max_x = -5.5, 5.5
+    min_y, max_y = -5.5, 5.5
+    
+    # Second pass to plot models with consistent uncertainty color scaling
+    for ax, model_type in model_axes:
+        if model_type in model_data:
+            data = model_data[model_type]
+            
+            # Plot predictions with consistent uncertainty scale
+            # Use the display name mapping for the title
+            display_name = model_display.get(model_type, model_type.capitalize())
+            title = f"{display_name} (MSE: {test_mse_dict.get(model_type, 0):.4f})"
+            quiver = ax.quiver(data['inputs'][:, 0], data['inputs'][:, 1], 
+                              data['pred_mu'][:, 0], data['pred_mu'][:, 1], 
+                              data['uncertainty'], cmap='viridis', 
+                              angles='xy', scale_units='xy', scale=1, alpha=0.8,
+                              norm=norm)  # Use consistent color normalization
+            
+            quiver_plots.append(quiver)
+            
+            ax.set_title(title)
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y', labelpad=-5)  # Bring Y label closer to the axis
+            ax.grid(True)
+            
+            # Set aspect ratio to be equal (square plot)
+            ax.set_aspect('equal')
+            
+            # Apply consistent limits
+            ax.set_xlim(min_x, max_x)
+            ax.set_ylim(min_y, max_y)
+    
+    # Create a single colorbar for all plots
+    if quiver_plots:
+        # Use the last axis (invariant/incorrect model) for the colorbar
+        last_ax = model_axes[-1][0]
+        
+        # Create colorbar with axes_divider for proper alignment
+        divider = make_axes_locatable(last_ax)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        
+        # Create the colorbar
+        cbar = fig.colorbar(quiver_plots[-1], cax=cax)
+        
+        # Calculate fewer tick positions for more relaxed indexing
+        tick_count = 5  # Reduced from 10 for more relaxed appearance
+        ticks = np.linspace(vmin, vmax, tick_count)
+        cbar.set_ticks(ticks)
+        
+        # Format the tick labels with 2 decimal places
+        cbar.set_ticklabels([f'{tick:.2f}' for tick in ticks])
+        cbar.set_label(r'Uncertainty $||\sigma||$')
+    
+    # Create error bar comparison in a separate figure
+    if all_errors:
+        # Add error bar plot in a separate figure to maintain clean layout
+        fig_error = plt.figure(figsize=(10, 8))
+        ax_error = fig_error.add_subplot(111)
+        
+        # Sort points by error for clearer visualization
+        for model_type, error, uncertainty in all_errors:
+            # Create sorted indices
+            sorted_indices = np.argsort(error)
+            sorted_error = error[sorted_indices]
+            sorted_uncertainty = uncertainty[sorted_indices]
+            
+            # Plot error vs predicted uncertainty - use display name
+            display_name = model_display.get(model_type, model_type.capitalize())
+            ax_error.scatter(sorted_error, sorted_uncertainty, label=display_name, alpha=0.7)
+        
+        # Add diagonal line for perfect calibration
+        max_val = max(np.max([e for _, e, _ in all_errors]), np.max([u for _, _, u in all_errors]))
+        ax_error.plot([0, max_val], [0, max_val], 'k--', label='Perfect Calibration')
+        
+        ax_error.set_title('Error vs. Predicted Uncertainty')
+        ax_error.set_xlabel('Actual Error')
+        ax_error.set_ylabel('Predicted Uncertainty')
+        ax_error.legend()
+        ax_error.grid(True)
+        
+        # Save error plot separately
+        if save_path:
+            error_save_path = save_path.replace('.png', '_error_comparison.png')
+            fig_error.tight_layout()
+            fig_error.savefig(error_save_path)
+            plt.close(fig_error)
+    
+    # Adjust layout 
     plt.tight_layout()
     
     # Save or show
@@ -519,7 +771,6 @@ def plot_rotation_results(rotation_results, save_dir=None):
         plt.show()
 
 
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     
@@ -540,6 +791,7 @@ if __name__ == "__main__":
         data_dir: str = "../data/vector_field"
         results_dir: str = "../results/vector_field"
         random_seed: int = 42
+        skip_training: bool = False  # Flag to skip training and just run visualizations
     
     parser.add_arguments(Options, dest="options")
     args = parser.parse_args()
@@ -560,6 +812,7 @@ if __name__ == "__main__":
     data_dir = args.options.data_dir
     results_dir = args.options.results_dir
     random_seed = args.options.random_seed
+    skip_training = args.options.skip_training
     
     # Set random seed
     key = jax.random.PRNGKey(random_seed)
@@ -585,154 +838,381 @@ if __name__ == "__main__":
         np.save(f"{data_file_prefix}.npy", input_positions)
         np.save(f"{data_dir}/vector_field_{dataset_type}_{n_samples}_samples_{noise}_noise.npy", vector_field)
     
-    # Create models
-    input_irreps = e3nn.Irreps("1x1e")  # 3D vector input (x,y,z with z=0)
-    output_irreps = e3nn.Irreps("1x1e")  # 3D vector output (x,y,z with z=0)
-    
-    key, subkey1, subkey2, subkey3 = jax.random.split(key, 4)
-    
-    # Create and train correct equivariant model
-    correct_model = CorrectEquivariantVectorFieldModel(
-        input_irreps=input_irreps,
-        output_irreps=output_irreps,
-        hidden_dim=hidden_dim
-    )
-    
-    print("\n--- Training Correct Equivariant Model ---")
-    correct_results = train_model(
-        correct_model, 'correct_equivariant', subkey1, input_positions, vector_field,
-        n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs,
-        batch_size, train_val_split, beta, results_dir
-    )
-    
-    # Create and train incorrect equivariant model
-    incorrect_model = IncorrectEquivariantVectorFieldModel(
-        input_irreps=input_irreps,
-        output_irreps=output_irreps,
-        hidden_dim=hidden_dim
-    )
-    
-    print("\n--- Training Incorrect Equivariant Model ---")
-    incorrect_results = train_model(
-        incorrect_model, 'incorrect_equivariant', subkey2, input_positions, vector_field,
-        n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs,
-        batch_size, train_val_split, beta, results_dir
-    )
-    
-    # Create and train MLP model
-    mlp_model = MLPVectorFieldModel(
-        hidden_dim=hidden_dim,
-        output_dim=2  # 2D vector output (x,y)
-    )
-    
-    print("\n--- Training MLP Model ---")
-    mlp_results = train_model(
-        mlp_model, 'mlp', subkey3, input_positions, vector_field,
-        n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs,
-        batch_size, train_val_split, beta, results_dir
-    )
-    
-    # Testing with rotations
-    print("\n--- Testing Models with Rotations ---")
-    
-    # Prepare test data for rotation tests
-    test_indices = np.arange(n_samples - n_holdout, n_samples)
-    
-    # Test data for each model type
-    correct_test_inputs = np.load(f"{results_dir}/test_inputs_correct_equivariant.npy")
-    correct_test_targets = np.load(f"{results_dir}/test_targets_correct_equivariant.npy")
-    
-    incorrect_test_inputs = np.load(f"{results_dir}/test_inputs_incorrect_equivariant.npy")
-    incorrect_test_targets = np.load(f"{results_dir}/test_targets_incorrect_equivariant.npy")
-    
-    mlp_test_inputs = np.load(f"{results_dir}/test_inputs_mlp.npy")
-    mlp_test_targets = np.load(f"{results_dir}/test_targets_mlp.npy")
-    
-    # Convert to IrrepsArray for equivariant models
-    correct_test_inputs_irreps = IrrepsArray(input_irreps, correct_test_inputs)
-    correct_test_targets_irreps = IrrepsArray(output_irreps, correct_test_targets)
-    
-    incorrect_test_inputs_irreps = IrrepsArray(input_irreps, incorrect_test_inputs)
-    incorrect_test_targets_irreps = IrrepsArray(output_irreps, incorrect_test_targets)
-    
-    # Perform rotation tests
-    correct_rotation_results = test_with_rotations(
-        correct_model, 'correct_equivariant', 
-        correct_results['parameters'],
-        correct_test_inputs_irreps, correct_test_targets_irreps,
-        n_rotations, results_dir
-    )
-    
-    incorrect_rotation_results = test_with_rotations(
-        incorrect_model, 'incorrect_equivariant', 
-        incorrect_results['parameters'],
-        incorrect_test_inputs_irreps, incorrect_test_targets_irreps,
-        n_rotations, results_dir
-    )
-    
-    mlp_rotation_results = test_with_rotations(
-        mlp_model, 'mlp', 
-        mlp_results['parameters'],
-        mlp_test_inputs, mlp_test_targets,
-        n_rotations, results_dir
-    )
-    
-    # Create visualizations
-    print("\n--- Creating Visualizations ---")
-    
-    # Load predictions for visualization
-    correct_pred_mu = np.load(f"{results_dir}/test_prediction_mu_correct_equivariant.npy")
-    correct_pred_sigma_sq = np.load(f"{results_dir}/test_prediction_sigma_sq_correct_equivariant.npy")
-    
-    incorrect_pred_mu = np.load(f"{results_dir}/test_prediction_mu_incorrect_equivariant.npy")
-    incorrect_pred_sigma_sq = np.load(f"{results_dir}/test_prediction_sigma_sq_incorrect_equivariant.npy")
-    
-    mlp_pred_mu = np.load(f"{results_dir}/test_prediction_mu_mlp.npy")
-    mlp_pred_sigma_sq = np.load(f"{results_dir}/test_prediction_sigma_sq_mlp.npy")
-    
-    # Visualize predictions
-    visualize_predictions(
-        correct_test_inputs, correct_test_targets,
-        correct_pred_mu, correct_pred_sigma_sq,
-        "Correct Equivariant Model",
-        f"{results_dir}/correct_equivariant_predictions.png"
-    )
-    
-    visualize_predictions(
-        incorrect_test_inputs, incorrect_test_targets,
-        incorrect_pred_mu, incorrect_pred_sigma_sq,
-        "Incorrect Equivariant Model",
-        f"{results_dir}/incorrect_equivariant_predictions.png"
-    )
-    
-    visualize_predictions(
-        mlp_test_inputs, mlp_test_targets,
-        mlp_pred_mu, mlp_pred_sigma_sq,
-        "MLP Model",
-        f"{results_dir}/mlp_predictions.png"
-    )
-    
-    # Plot rotation test results
-    #rotation_results = {
-        #'Correct Equivariant': correct_rotation_results,
-        #'Incorrect Equivariant': incorrect_rotation_results,
-        #'MLP': mlp_rotation_results
-    #}
-    
-    rotation_results = {
-        'Correct Equivariant': correct_rotation_results,
-        'MLP': mlp_rotation_results
+    # Define file paths for saved model results
+    correct_model_files = {
+        'pred_mu': f"{results_dir}/test_prediction_mu_correct_equivariant.npy",
+        'pred_sigma_sq': f"{results_dir}/test_prediction_sigma_sq_correct_equivariant.npy",
+        'test_targets': f"{results_dir}/test_targets_correct_equivariant.npy",
+        'test_inputs': f"{results_dir}/test_inputs_correct_equivariant.npy",
+        'rotation_mse': f"{results_dir}/rotation_mse_correct_equivariant.npy",
+        'rotation_nll': f"{results_dir}/rotation_nll_correct_equivariant.npy",
+        'rotation_calibration': f"{results_dir}/rotation_calibration_correct_equivariant.npy",
+        'rotation_angles': f"{results_dir}/rotation_angles_correct_equivariant.npy"
     }
     
-    plot_rotation_results(rotation_results, results_dir)
+    incorrect_model_files = {
+        'pred_mu': f"{results_dir}/test_prediction_mu_incorrect_equivariant.npy",
+        'pred_sigma_sq': f"{results_dir}/test_prediction_sigma_sq_incorrect_equivariant.npy",
+        'test_targets': f"{results_dir}/test_targets_incorrect_equivariant.npy",
+        'test_inputs': f"{results_dir}/test_inputs_incorrect_equivariant.npy",
+        'rotation_mse': f"{results_dir}/rotation_mse_incorrect_equivariant.npy",
+        'rotation_nll': f"{results_dir}/rotation_nll_incorrect_equivariant.npy",
+        'rotation_calibration': f"{results_dir}/rotation_calibration_incorrect_equivariant.npy",
+        'rotation_angles': f"{results_dir}/rotation_angles_incorrect_equivariant.npy"
+    }
     
-    print(f"\nExperiment completed. Results saved to {results_dir}")
-    print("\nTest MSE Results:")
-    print(f"  Correct Equivariant: {correct_results['test_mse']:.4f}")
-    print(f"  Incorrect Equivariant: {incorrect_results['test_mse']:.4f}")
-    print(f"  MLP: {mlp_results['test_mse']:.4f}")
+    mlp_model_files = {
+        'pred_mu': f"{results_dir}/test_prediction_mu_mlp.npy",
+        'pred_sigma_sq': f"{results_dir}/test_prediction_sigma_sq_mlp.npy",
+        'test_targets': f"{results_dir}/test_targets_mlp.npy",
+        'test_inputs': f"{results_dir}/test_inputs_mlp.npy",
+        'rotation_mse': f"{results_dir}/rotation_mse_mlp.npy",
+        'rotation_nll': f"{results_dir}/rotation_nll_mlp.npy",
+        'rotation_calibration': f"{results_dir}/rotation_calibration_mlp.npy",
+        'rotation_angles': f"{results_dir}/rotation_angles_mlp.npy"
+    }
     
-    print("\nTest NLL Results:")
-    print(f"  Correct Equivariant: {correct_results['test_nll']:.4f}")
-    print(f"  Incorrect Equivariant: {incorrect_results['test_nll']:.4f}")
-    print(f"  MLP: {mlp_results['test_nll']:.4f}") 
+    # Check if all necessary files exist to skip training
+    all_files_exist = all(os.path.exists(f) for f in 
+                         list(correct_model_files.values()) + 
+                         list(incorrect_model_files.values()) + 
+                         list(mlp_model_files.values()))
+    
+    # Also check for MSE and NLL files specifically
+    mse_nll_files = [
+        f"{results_dir}/test_mse_correct_equivariant.npy",
+        f"{results_dir}/test_nll_correct_equivariant.npy",
+        f"{results_dir}/test_mse_incorrect_equivariant.npy",
+        f"{results_dir}/test_nll_incorrect_equivariant.npy",
+        f"{results_dir}/test_mse_mlp.npy",
+        f"{results_dir}/test_nll_mlp.npy"
+    ]
+    
+    mse_nll_exist = all(os.path.exists(f) for f in mse_nll_files)
+    
+    # Only skip training if ALL required files exist
+    should_train = not skip_training and (not all_files_exist or not mse_nll_exist)
+    
+    # Initialize result dictionaries
+    correct_results = {}
+    incorrect_results = {}
+    mlp_results = {}
+    
+    # Training section (can be commented out or skipped with --skip_training flag)
+    if should_train:
+        print("\n--- Running model training and evaluation ---")
+        
+        # Setup for models
+        input_irreps = e3nn.Irreps("1x1e")  # 3D vector input (x,y,z with z=0)
+        output_irreps = e3nn.Irreps("1x1e")  # 3D vector output (x,y,z with z=0)
+        
+        key, subkey1, subkey2, subkey3 = jax.random.split(key, 4)
+        
+        # Create and train correct equivariant model
+        correct_model = CorrectEquivariantVectorFieldModel(
+            input_irreps=input_irreps,
+            output_irreps=output_irreps,
+            hidden_dim=hidden_dim
+        )
+        
+        print("\n--- Training Correct Equivariant Model ---")
+        correct_results = train_model(
+            correct_model, 'correct_equivariant', subkey1, input_positions, vector_field,
+            n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs,
+            batch_size, train_val_split, beta, results_dir
+        )
+        
+        # Create and train incorrect equivariant model
+        incorrect_model = IncorrectEquivariantVectorFieldModel(
+            input_irreps=input_irreps,
+            output_irreps=output_irreps,
+            hidden_dim=hidden_dim
+        )
+        
+        print("\n--- Training Incorrect Equivariant Model ---")
+        incorrect_results = train_model(
+            incorrect_model, 'incorrect_equivariant', subkey2, input_positions, vector_field,
+            n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs,
+            batch_size, train_val_split, beta, results_dir
+        )
+        
+        # Create and train MLP model
+        mlp_model = MLPVectorFieldModel(
+            hidden_dim=hidden_dim,
+            output_dim=2  # 2D vector output (x,y)
+        )
+        
+        print("\n--- Training MLP Model ---")
+        mlp_results = train_model(
+            mlp_model, 'mlp', subkey3, input_positions, vector_field,
+            n_holdout, minimum_epochs, maximum_epochs_no_improve, maximum_epochs,
+            batch_size, train_val_split, beta, results_dir
+        )
+        
+        # Testing with rotations
+        print("\n--- Testing Models with Rotations ---")
+        
+        # Prepare test data for rotation tests
+        test_indices = np.arange(n_samples - n_holdout, n_samples)
+        
+        # Test data for each model type
+        correct_test_inputs = np.load(f"{results_dir}/test_inputs_correct_equivariant.npy")
+        correct_test_targets = np.load(f"{results_dir}/test_targets_correct_equivariant.npy")
+        
+        incorrect_test_inputs = np.load(f"{results_dir}/test_inputs_incorrect_equivariant.npy")
+        incorrect_test_targets = np.load(f"{results_dir}/test_targets_incorrect_equivariant.npy")
+        
+        mlp_test_inputs = np.load(f"{results_dir}/test_inputs_mlp.npy")
+        mlp_test_targets = np.load(f"{results_dir}/test_targets_mlp.npy")
+        
+        # Convert to IrrepsArray for equivariant models
+        correct_test_inputs_irreps = IrrepsArray(input_irreps, correct_test_inputs)
+        correct_test_targets_irreps = IrrepsArray(output_irreps, correct_test_targets)
+        
+        incorrect_test_inputs_irreps = IrrepsArray(input_irreps, incorrect_test_inputs)
+        incorrect_test_targets_irreps = IrrepsArray(output_irreps, incorrect_test_targets)
+        
+        # Perform rotation tests
+        correct_rotation_results = test_with_rotations(
+            correct_model, 'correct_equivariant', 
+            correct_results['parameters'],
+            correct_test_inputs_irreps, correct_test_targets_irreps,
+            n_rotations, results_dir
+        )
+        
+        incorrect_rotation_results = test_with_rotations(
+            incorrect_model, 'incorrect_equivariant', 
+            incorrect_results['parameters'],
+            incorrect_test_inputs_irreps, incorrect_test_targets_irreps,
+            n_rotations, results_dir
+        )
+        
+        mlp_rotation_results = test_with_rotations(
+            mlp_model, 'mlp', 
+            mlp_results['parameters'],
+            mlp_test_inputs, mlp_test_targets,
+            n_rotations, results_dir
+        )
+        
+        # Save MSE and NLL values for later use
+        np.save(f"{results_dir}/test_mse_correct_equivariant.npy", correct_results['test_mse'])
+        np.save(f"{results_dir}/test_nll_correct_equivariant.npy", correct_results['test_nll'])
+        
+        np.save(f"{results_dir}/test_mse_incorrect_equivariant.npy", incorrect_results['test_mse'])
+        np.save(f"{results_dir}/test_nll_incorrect_equivariant.npy", incorrect_results['test_nll'])
+        
+        np.save(f"{results_dir}/test_mse_mlp.npy", mlp_results['test_mse'])
+        np.save(f"{results_dir}/test_nll_mlp.npy", mlp_results['test_nll'])
+    else:
+        print("\n--- Skipping training, using existing model results ---")
+    
+    # Visualization section (runs regardless of whether training was skipped)
+    print("\n--- Creating Visualizations ---")
+    
+    # Define a helper function to safely load NumPy files
+    def safe_load(file_path, default=None):
+        try:
+            return np.load(file_path)
+        except FileNotFoundError:
+            print(f"Warning: Could not load {file_path}")
+            if default is not None:
+                print(f"Using default value instead")
+                return default
+            else:
+                raise ValueError(f"Required file {file_path} not found. Run training first.")
+    
+    # Load all necessary files for visualization, with error handling
+    try:
+        # Load model predictions and test data
+        correct_pred_mu = safe_load(correct_model_files['pred_mu'])
+        correct_pred_sigma_sq = safe_load(correct_model_files['pred_sigma_sq'])
+        correct_test_targets = safe_load(correct_model_files['test_targets'])
+        correct_test_inputs = safe_load(correct_model_files['test_inputs'])
+        
+        incorrect_pred_mu = safe_load(incorrect_model_files['pred_mu'])
+        incorrect_pred_sigma_sq = safe_load(incorrect_model_files['pred_sigma_sq'])
+        incorrect_test_targets = safe_load(incorrect_model_files['test_targets'])
+        incorrect_test_inputs = safe_load(incorrect_model_files['test_inputs'])
+        
+        mlp_pred_mu = safe_load(mlp_model_files['pred_mu'])
+        mlp_pred_sigma_sq = safe_load(mlp_model_files['pred_sigma_sq'])
+        mlp_test_targets = safe_load(mlp_model_files['test_targets'])
+        mlp_test_inputs = safe_load(mlp_model_files['test_inputs'])
+        
+        # Load rotation results
+        correct_rotation_angles = safe_load(correct_model_files['rotation_angles'])
+        correct_rotation_mse = safe_load(correct_model_files['rotation_mse'])
+        correct_rotation_nll = safe_load(correct_model_files['rotation_nll'])
+        correct_rotation_calibration = safe_load(correct_model_files['rotation_calibration'])
+        
+        incorrect_rotation_angles = safe_load(incorrect_model_files['rotation_angles'])
+        incorrect_rotation_mse = safe_load(incorrect_model_files['rotation_mse'])
+        incorrect_rotation_nll = safe_load(incorrect_model_files['rotation_nll'])
+        incorrect_rotation_calibration = safe_load(incorrect_model_files['rotation_calibration'])
+        
+        mlp_rotation_angles = safe_load(mlp_model_files['rotation_angles'])
+        mlp_rotation_mse = safe_load(mlp_model_files['rotation_mse'])
+        mlp_rotation_nll = safe_load(mlp_model_files['rotation_nll'])
+        mlp_rotation_calibration = safe_load(mlp_model_files['rotation_calibration'])
+        
+        # Load MSE and NLL values if needed
+        if not correct_results:
+            correct_results = {
+                'test_mse': float(safe_load(f"{results_dir}/test_mse_correct_equivariant.npy")),
+                'test_nll': float(safe_load(f"{results_dir}/test_nll_correct_equivariant.npy"))
+            }
+        
+        if not incorrect_results:
+            incorrect_results = {
+                'test_mse': float(safe_load(f"{results_dir}/test_mse_incorrect_equivariant.npy")),
+                'test_nll': float(safe_load(f"{results_dir}/test_nll_incorrect_equivariant.npy"))
+            }
+        
+        if not mlp_results:
+            mlp_results = {
+                'test_mse': float(safe_load(f"{results_dir}/test_mse_mlp.npy")),
+                'test_nll': float(safe_load(f"{results_dir}/test_nll_mlp.npy"))
+            }
+        
+        # Reconstruct rotation results dictionaries for plotting
+        correct_rotation_results = {
+            'angles': correct_rotation_angles,
+            'mse': correct_rotation_mse,
+            'nll': correct_rotation_nll,
+            'calibration': correct_rotation_calibration
+        }
+        
+        incorrect_rotation_results = {
+            'angles': incorrect_rotation_angles,
+            'mse': incorrect_rotation_mse,
+            'nll': incorrect_rotation_nll,
+            'calibration': incorrect_rotation_calibration
+        }
+        
+        mlp_rotation_results = {
+            'angles': mlp_rotation_angles,
+            'mse': mlp_rotation_mse,
+            'nll': mlp_rotation_nll,
+            'calibration': mlp_rotation_calibration
+        }
+        
+        # Visualize individual model predictions
+        
+        # Calculate all uncertainties to get consistent color scale
+        all_uncertainties = []
+        
+        # Collect uncertainties from all models
+        for model_type in ['mlp', 'equivariant', 'invariant']:
+            if model_type == 'mlp':
+                pred_sigma_sq = mlp_pred_sigma_sq
+            elif model_type == 'equivariant':
+                pred_sigma_sq = correct_pred_sigma_sq
+            elif model_type == 'invariant':
+                pred_sigma_sq = incorrect_pred_sigma_sq
+                
+            # Extract arrays if needed
+            if hasattr(pred_sigma_sq, 'array'):
+                pred_sigma_sq_array = pred_sigma_sq.array
+            else:
+                pred_sigma_sq_array = pred_sigma_sq
+                
+            # Handle 3D arrays by using only x,y components
+            if pred_sigma_sq_array.shape[1] > 2:
+                pred_sigma_sq_array = pred_sigma_sq_array[:, :2]
+                
+            # Calculate uncertainty
+            pred_sigma = np.sqrt(pred_sigma_sq_array)
+            uncertainty = np.linalg.norm(pred_sigma, axis=1)
+            all_uncertainties.extend(uncertainty)
+        
+        # Determine global min and max for uncertainty
+        vmin = min(all_uncertainties) if all_uncertainties else 0
+        vmax = max(all_uncertainties) if all_uncertainties else 1
+        
+        # Create visualizations with consistent color scale
+        visualize_predictions(
+            correct_test_inputs, correct_test_targets,
+            correct_pred_mu, correct_pred_sigma_sq,
+            f"Correct Equivariant Model (MSE: {correct_results['test_mse']:.4f})",
+            f"{results_dir}/correct_equivariant_predictions.png",
+            vmin=vmin, vmax=vmax
+        )
+        
+        visualize_predictions(
+            incorrect_test_inputs, incorrect_test_targets,
+            incorrect_pred_mu, incorrect_pred_sigma_sq,
+            f"Incorrect Equivariant Model (MSE: {incorrect_results['test_mse']:.4f})",
+            f"{results_dir}/incorrect_equivariant_predictions.png",
+            vmin=vmin, vmax=vmax
+        )
+        
+        visualize_predictions(
+            mlp_test_inputs, mlp_test_targets,
+            mlp_pred_mu, mlp_pred_sigma_sq,
+            f"MLP Model (MSE: {mlp_results['test_mse']:.4f})",
+            f"{results_dir}/mlp_predictions.png",
+            vmin=vmin, vmax=vmax
+        )
+        
+        # Plot rotation test results
+        rotation_results = {
+            'Correct Equivariant': correct_rotation_results,
+            'MLP': mlp_rotation_results
+        }
+        
+        plot_rotation_results(rotation_results, results_dir)
+        
+        # Combined visualization of all models
+        test_inputs_dict = {
+            'mlp': mlp_test_inputs,
+            'equivariant': correct_test_inputs,
+            'invariant': incorrect_test_inputs  # Using incorrect equivariant as invariant for this example
+        }
+        
+        test_targets_dict = {
+            'mlp': mlp_test_targets,
+            'equivariant': correct_test_targets,
+            'invariant': incorrect_test_targets
+        }
+        
+        predictions_mu_dict = {
+            'mlp': mlp_pred_mu,
+            'equivariant': correct_pred_mu,
+            'invariant': incorrect_pred_mu
+        }
+        
+        predictions_sigma_sq_dict = {
+            'mlp': mlp_pred_sigma_sq,
+            'equivariant': correct_pred_sigma_sq,
+            'invariant': incorrect_pred_sigma_sq
+        }
+        
+        # Create a dictionary of test MSE values
+        test_mse_dict = {
+            'mlp': mlp_results['test_mse'],
+            'equivariant': correct_results['test_mse'],
+            'invariant': incorrect_results['test_mse']
+        }
+        
+        # Create the combined visualization
+        visualize_all_predictions(
+            test_inputs_dict, test_targets_dict,
+            predictions_mu_dict, predictions_sigma_sq_dict,
+            test_mse_dict,
+            f"{results_dir}/all_model_predictions_comparison.png"
+        )
+        
+        print(f"\nExperiment completed. Results saved to {results_dir}")
+        print("\nTest MSE Results:")
+        print(f"  Correct Equivariant: {correct_results['test_mse']:.4f}")
+        print(f"  Incorrect Equivariant: {incorrect_results['test_mse']:.4f}")
+        print(f"  MLP: {mlp_results['test_mse']:.4f}")
+        
+        print("\nTest NLL Results:")
+        print(f"  Correct Equivariant: {correct_results['test_nll']:.4f}")
+        print(f"  Incorrect Equivariant: {incorrect_results['test_nll']:.4f}")
+        print(f"  MLP: {mlp_results['test_nll']:.4f}")
+    
+    except ValueError as e:
+        print(f"\nError: {e}")
+        print("Please run the script without the --skip_training flag to generate the necessary files.") 

@@ -1,1 +1,1 @@
-Deprecated experiments will go here, with propper justifications as to why they are not relevant or contain experimental flaws
+We deprecated the moons experiment in way of the vector regression, which executed the idea we were originally going for without and better captured the equivariance taxonomy.

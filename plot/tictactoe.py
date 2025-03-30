@@ -44,7 +44,7 @@ def set_rc_params(fontsize=None):
 
 if __name__ == "__main__":
 
-    set_rc_params(fontsize=36)
+    set_rc_params(fontsize=20)
 
     board = np.array([
         ['X', ' ', 'O'],
@@ -110,8 +110,8 @@ if __name__ == "__main__":
     ax[0,1].set_xticks([])
     ax[0,1].set_yticks([])
     ax[0,1].set_title('Q-values')
-    #cbar = fig.colorbar(heatmap, ax=ax[0,1], fraction=0.046, pad=0.04)
-    #cbar.ax.tick_params(labelsize=16)
+    cbar = fig.colorbar(heatmap, ax=ax[0,1], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=16)
     for i in range(Q_board.shape[0]):
         for j in range(Q_board.shape[1]):
             ax[0,1].text(j, i, f'{Q_board[i, j]:.1f}', ha='center', va='center', color='k')
@@ -126,8 +126,8 @@ if __name__ == "__main__":
     ax[1,1].set_xticks([])
     ax[1,1].set_yticks([])
     ax[1,1].set_title('Rotated Q-values')
-    #cbar = fig.colorbar(heatmap, ax=ax[1,1], fraction=0.046, pad=0.04)
-    #cbar.ax.tick_params(labelsize=16)
+    cbar = fig.colorbar(heatmap, ax=ax[1,1], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=16)
     for i in range(Q_board_rotated.shape[0]):
         for j in range(Q_board_rotated.shape[1]):
             ax[1,1].text(j, i, f'{Q_board_rotated[i, j]:.1f}', ha='center', va='center', color='k')
@@ -139,8 +139,8 @@ if __name__ == "__main__":
     ax[0,2].set_xticks([])
     ax[0,2].set_yticks([])
     ax[0,2].set_title('Uncertainty')
-    #cbar = fig.colorbar(noise_map, ax=ax[0,2], fraction=0.046, pad=0.04)
-    #cbar.ax.tick_params(labelsize=16)
+    cbar = fig.colorbar(noise_map, ax=ax[0,2], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=16)
     for i in range(random_noise.shape[0]):
         for j in range(random_noise.shape[1]):
             ax[0,2].text(j, i, f'{random_noise[i, j]:.2f}', ha='center', va='center', color='k')
@@ -151,12 +151,13 @@ if __name__ == "__main__":
     ax[1,2].set_xticks([])
     ax[1,2].set_yticks([])
     ax[1,2].set_title('Rotated Uncertainty')
-    #cbar = fig.colorbar(noise_map, ax=ax[1,2], fraction=0.046, pad=0.04)
-    #cbar.ax.tick_params(labelsize=16)
+    cbar = fig.colorbar(noise_map, ax=ax[1,2], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=16)
     for i in range(random_noise_rotated.shape[0]):
         for j in range(random_noise_rotated.shape[1]):
             ax[1,2].text(j, i, f'{random_noise_rotated[i, j]:.2f}', ha='center', va='center', color='k')
 
     plt.savefig('../assets/tictactoe.pdf', bbox_inches='tight')
+    plt.savefig('../assets/tictactoe.png', bbox_inches='tight')
 
 

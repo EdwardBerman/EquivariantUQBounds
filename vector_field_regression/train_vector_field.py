@@ -699,7 +699,7 @@ def visualize_all_predictions(test_inputs_dict, test_targets_dict,
         )
     
         # Optionally, customize the inset axes (e.g., add a title and adjust limits)
-        inset_ax.set_title("Scaled x100", fontsize=8)
+        inset_ax.set_title("Scaled x100", fontsize=24)
         inset_ax.set_xlim(min_x, max_x)
         inset_ax.set_ylim(min_y, max_y)
         inset_ax.grid(True)

@@ -174,4 +174,27 @@ plt.ylabel("ENCE")
 plt.yscale("log")
 plt.legend()
 plt.savefig("../assets/upper_bound_vs_computed.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, 2, figsize=(48, 12))
+ax[0].plot(range(1, 100, 1), ENCE_bins_correct_augmentation, label="Computed ENCE (Correct Augmentation)")
+ax[0].plot(range(1, 100, 1), ENCE_bins_incorrect_augmentation, label="Computed ENCE (Incorrect Augmentation)")
+ax[0].plot(range(1, 100, 1), upper_bound_correct, label="Upper Bound")
+ax[0].set_xlabel("Number of bins")
+ax[0].set_ylabel("ENCE")
+ax[0].set_yscale("log")
+ax[0].legend()
+
+length_normalized_correct = np.array(ENCE_bins_correct_augmentation)
+length_normalized_incorrect = np.array(ENCE_bins_incorrect_augmentation) 
+length_normalized_upper_bound = np.array(upper_bound_correct) 
+
+ax[1].plot(range(1, 100, 1), length_normalized_correct, label="Computed ENCE (Correct Augmentation)")
+ax[1].plot(range(1, 100, 1), length_normalized_incorrect, label="Computed ENCE (Incorrect Augmentation)")
+ax[1].plot(range(1, 100, 1), length_normalized_upper_bound, label="Upper Bound")
+ax[1].set_xlabel("Number of bins")
+ax[1].set_ylabel(r"ENCE")
+ax[1].legend()
+
+plt.savefig("../assets/multi_scale_upper_bound_vs_computed.pdf")
 

@@ -101,6 +101,9 @@ print("Min label: ", np.min(labels_np))
 print("Min mean_pred: ", np.min(mean_pred_np))
 print("Median label: ", np.median(labels_np))
 
+print(np.min(np.linalg.norm(np.sqrt(2/np.pi)*ep_uq_np, axis=1)**2))
+print(np.max(np.linalg.norm(np.sqrt(2/np.pi)*ep_uq_np, axis=1)**2))
+
 
 def ENCE(y_true, y_pred, y_pred_std, bins=10, max_label=3.3, min_label=-3.3):
     max_stds = np.max(y_pred_std, axis=0)
@@ -127,7 +130,7 @@ def ENCE(y_true, y_pred, y_pred_std, bins=10, max_label=3.3, min_label=-3.3):
             max_error_bin = np.where(diff_max < diff_min, diff_min, diff_max)
 
             ENCE += number_vectors * np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin - np.abs(y_true_bin - y_pred_bin), axis=1)**2)/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1)**2) 
-            upper_bound += number_vectors * np.mean(np.linalg.norm(max_error_bin, axis=1)**2)/ np.mean(np.linalg.norm(np.sqrt(2/np.pi)*y_pred_std_bin, axis=1)**2) #* number_vectors
+            upper_bound += number_vectors * np.mean(np.linalg.norm(max_error_bin, axis=1)**2)/ 6.945443911561127 #* number_vectors
     
     return ENCE / y_true.shape[0] , np.mean(number_vecs), upper_bound / y_true.shape[0]
 

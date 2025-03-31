@@ -757,7 +757,7 @@ def plot_rotation_results(rotation_results, save_dir=None):
         save_dir: Directory to save results
     """
     model_types = list(rotation_results.keys())
-    fig, ax = plt.subplots(1, 3, figsize=(24, 6))
+    fig, ax = plt.subplots(1, 2, figsize=(24, 6))
     
     # Extract angles (they should be the same for all models)
     angles_deg = np.degrees(rotation_results[model_types[0]]['angles'])
@@ -766,10 +766,10 @@ def plot_rotation_results(rotation_results, save_dir=None):
     for model_type in model_types:
         ax[0].plot(angles_deg, rotation_results[model_type]['mse'], 
                   label=model_type, marker='o')
-    ax[0].set_title('MSE vs. Rotation Angle')
+    ax[0].set_title('MSE vs. Rotation Angle (Rotational Dataset)')
     ax[0].set_xlabel('Rotation Angle (degrees)')
     ax[0].set_ylabel('Mean Squared Error')
-    ax[0].legend()
+    ax[0].legend(loc='upper right')
     ax[0].grid(True)
     
     # Plot NLL
@@ -779,19 +779,19 @@ def plot_rotation_results(rotation_results, save_dir=None):
     ax[1].set_title('NLL vs. Rotation Angle')
     ax[1].set_xlabel('Rotation Angle (degrees)')
     ax[1].set_ylabel('Negative Log-Likelihood')
-    ax[1].legend()
+    ax[1].legend(loc='upper right')
     ax[1].grid(True)
     
     # Plot Calibration
-    for model_type in model_types:
-        ax[2].plot(angles_deg, rotation_results[model_type]['calibration'], 
-                  label=model_type, marker='o')
-    ax[2].axhline(y=1.0, color='r', linestyle='--', label='Perfect Calibration')
-    ax[2].set_title('Uncertainty Calibration vs. Rotation Angle')
-    ax[2].set_xlabel('Rotation Angle (degrees)')
-    ax[2].set_ylabel('Actual Error / Expected Error')
-    ax[2].legend()
-    ax[2].grid(True)
+    #for model_type in model_types:
+     #   ax[2].plot(angles_deg, rotation_results[model_type]['calibration'], 
+      #            label=model_type, marker='o')
+    #ax[2].axhline(y=1.0, color='r', linestyle='--', label='Perfect Calibration')
+    #ax[2].set_title('Uncertainty Calibration vs. Rotation Angle')
+    #ax[2].set_xlabel('Rotation Angle (degrees)')
+    #ax[2].set_ylabel('Actual Error / Expected Error')
+    #ax[2].legend()
+    #ax[2].grid(True)
     
     plt.tight_layout()
     
@@ -923,6 +923,8 @@ if __name__ == "__main__":
     
     # Only skip training if ALL required files exist
     should_train = not skip_training and (not all_files_exist or not mse_nll_exist)
+
+    should_train = True
     
     # Initialize result dictionaries
     correct_results = {}
@@ -1187,7 +1189,7 @@ if __name__ == "__main__":
         
         # Plot rotation test results
         rotation_results = {
-            'Correct Equivariant': correct_rotation_results,
+            'E(3) Equivariant': correct_rotation_results,
             'MLP': mlp_rotation_results
         }
         

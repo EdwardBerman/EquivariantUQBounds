@@ -12,14 +12,7 @@ First, clone the repo (and the submodules!) via
 
 ## Vector Field Regression
 
-```
-# Generate a dataset (or use an existing one)
-python make_vector_field_dataset.py --dataset_type spiral --n_samples 2000 --noise 0.1 --visualize True
-
-# Run the full experiment
-python train_vector_field.py --dataset_type spiral --n_samples 2000 --noise 0.1 --hidden_dim 32 --maximum_epochs 100
-```
-
+Refer to the README.md in the folder for the experiment
 
 ## Swiss Roll
 

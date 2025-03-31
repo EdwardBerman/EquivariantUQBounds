@@ -13,6 +13,7 @@ from matplotlib import rcParams, rc
 from matplotlib.gridspec import GridSpec
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 
@@ -428,7 +429,8 @@ def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions
         predictions_sigma_sq_array = predictions_sigma_sq_array[:, :2]
     
     # Calculate uncertainty as standard deviation
-    predictions_sigma = np.sqrt(predictions_sigma_sq_array)
+    #predictions_sigma = np.sqrt(predictions_sigma_sq_array)
+    predictions_sigma = predictions_sigma_sq_array
     #  uncertainty = np.mean(predictions_sigma, axis=1)
     uncertainty = np.linalg.norm(predictions_sigma, axis=1)
     
@@ -457,7 +459,7 @@ def visualize_predictions(test_inputs, test_targets, predictions_mu, predictions
                          uncertainty, cmap='viridis', norm=norm,
                          angles='xy', scale_units='xy', scale=1, alpha=0.8)
     cbar = plt.colorbar(scatter, ax=ax[1])
-    cbar.set_label(r'Uncertainty $||\sigma||$')
+    cbar.set_label(r'Uncertainty $||\sigma^2||$')
     ax[1].set_title(f'Predicted Vector Field with Uncertainty - {title}')
     ax[1].set_xlabel('X')
     ax[1].set_ylabel('Y')
@@ -490,19 +492,18 @@ def visualize_all_predictions(test_inputs_dict, test_targets_dict,
     """
     # Define model mapping for display purposes
     model_display = {
-        'mlp': 'Mlp',
-        'equivariant': 'Correct',
-        'invariant': 'Incorrect'
+        'mlp': 'MLP',
+        'equivariant': 'E(3)'
     }
     
     # Define the order of models to display
-    model_order = ['mlp', 'equivariant', 'invariant']
+    model_order = ['mlp', 'equivariant']
     
     # Create a figure with 1×4 layout (ground truth + 3 models)
-    fig = plt.figure(figsize=(24, 6))
+    fig = plt.figure(figsize=(18, 6))
     
     # Use GridSpec to create a 1×4 grid with space for colorbar
-    gs = GridSpec(1, 4, figure=fig)
+    gs = GridSpec(1, 3, figure=fig)
     
     # Ground truth subplot
     ax_truth = fig.add_subplot(gs[0, 0])
@@ -519,8 +520,8 @@ def visualize_all_predictions(test_inputs_dict, test_targets_dict,
     ax_equivariant = fig.add_subplot(gs[0, 2])
     model_axes.append((ax_equivariant, 'equivariant'))
     
-    ax_invariant = fig.add_subplot(gs[0, 3])
-    model_axes.append((ax_invariant, 'invariant'))
+    #ax_invariant = fig.add_subplot(gs[0, 3])
+    #model_axes.append((ax_invariant, 'invariant'))
     
     # First, get ground truth from any model (they should all have the same ground truth)
     first_model = model_order[0]
@@ -593,7 +594,8 @@ def visualize_all_predictions(test_inputs_dict, test_targets_dict,
                 pred_sigma_sq_array = pred_sigma_sq_array[:, :2]
             
             # Calculate uncertainty as standard deviation
-            pred_sigma = np.sqrt(pred_sigma_sq_array)
+            #pred_sigma = np.sqrt(pred_sigma_sq_array)
+            pred_sigma = pred_sigma_sq_array
             uncertainty = np.linalg.norm(pred_sigma, axis=1)
             all_uncertainties.extend(uncertainty)
             
@@ -671,7 +673,36 @@ def visualize_all_predictions(test_inputs_dict, test_targets_dict,
         
         # Format the tick labels with 2 decimal places
         cbar.set_ticklabels([f'{tick:.2f}' for tick in ticks])
-        cbar.set_label(r'Uncertainty $||\sigma||$')
+        cbar.set_label(r'Uncertainty $||\sigma^2||$')
+
+        second_last_ax = model_axes[-2][0]  # This is the second-to-last axis
+        divider2 = make_axes_locatable(second_last_ax)
+        cax2 = divider2.append_axes("right", size="5%", pad=0.1)
+        cbar2 = fig.colorbar(quiver_plots[-1], cax=cax2)
+        cbar2.set_ticks(ticks)
+        cbar2.set_ticklabels([f'{tick:.2f}' for tick in ticks])
+
+        inset_ax = inset_axes(last_ax, width="40%", height="40%", loc='upper right', borderpad=1)
+
+        inset_quiver = inset_ax.quiver(
+            data['inputs'][:, 0],
+            data['inputs'][:, 1],
+            100 * data['pred_mu'][:, 0],  # Scale the X component by 100
+            100 * data['pred_mu'][:, 1],  # Scale the Y component by 100
+            data['uncertainty'],
+            cmap='viridis',
+            angles='xy',
+            scale_units='xy',
+            scale=1,  # Keep the scale same so that the multiplication affects the arrow length
+            alpha=0.8,
+            norm=norm
+        )
+    
+        # Optionally, customize the inset axes (e.g., add a title and adjust limits)
+        inset_ax.set_title("Scaled x100", fontsize=8)
+        inset_ax.set_xlim(min_x, max_x)
+        inset_ax.set_ylim(min_y, max_y)
+        inset_ax.grid(True)
     
     # Create error bar comparison in a separate figure
     if all_errors:
@@ -702,7 +733,7 @@ def visualize_all_predictions(test_inputs_dict, test_targets_dict,
         
         # Save error plot separately
         if save_path:
-            error_save_path = save_path.replace('.png', '_error_comparison.png')
+            error_save_path = save_path.replace('.pdf', '_error_comparison.pdf')
             fig_error.tight_layout()
             fig_error.savefig(error_save_path)
             plt.close(fig_error)
@@ -765,7 +796,7 @@ def plot_rotation_results(rotation_results, save_dir=None):
     plt.tight_layout()
     
     if save_dir:
-        plt.savefig(f"{save_dir}/rotation_results_comparison.png")
+        plt.savefig(f"{save_dir}/rotation_results_comparison.pdf")
         plt.close()
     else:
         plt.show()
@@ -1134,7 +1165,7 @@ if __name__ == "__main__":
             correct_test_inputs, correct_test_targets,
             correct_pred_mu, correct_pred_sigma_sq,
             f"Correct Equivariant Model (MSE: {correct_results['test_mse']:.4f})",
-            f"{results_dir}/correct_equivariant_predictions.png",
+            f"{results_dir}/correct_equivariant_predictions.pdf",
             vmin=vmin, vmax=vmax
         )
         
@@ -1142,7 +1173,7 @@ if __name__ == "__main__":
             incorrect_test_inputs, incorrect_test_targets,
             incorrect_pred_mu, incorrect_pred_sigma_sq,
             f"Incorrect Equivariant Model (MSE: {incorrect_results['test_mse']:.4f})",
-            f"{results_dir}/incorrect_equivariant_predictions.png",
+            f"{results_dir}/incorrect_equivariant_predictions.pdf",
             vmin=vmin, vmax=vmax
         )
         
@@ -1150,7 +1181,7 @@ if __name__ == "__main__":
             mlp_test_inputs, mlp_test_targets,
             mlp_pred_mu, mlp_pred_sigma_sq,
             f"MLP Model (MSE: {mlp_results['test_mse']:.4f})",
-            f"{results_dir}/mlp_predictions.png",
+            f"{results_dir}/mlp_predictions.pdf",
             vmin=vmin, vmax=vmax
         )
         
@@ -1199,7 +1230,7 @@ if __name__ == "__main__":
             test_inputs_dict, test_targets_dict,
             predictions_mu_dict, predictions_sigma_sq_dict,
             test_mse_dict,
-            f"{results_dir}/all_model_predictions_comparison.png"
+            f"{results_dir}/all_model_predictions_comparison.pdf"
         )
         
         print(f"\nExperiment completed. Results saved to {results_dir}")

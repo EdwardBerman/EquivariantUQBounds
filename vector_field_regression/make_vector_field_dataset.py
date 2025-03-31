@@ -111,6 +111,7 @@ def create_synthetic_vector_field(n_samples, noise_level, dataset_type="spiral")
             x, y = pos
             vector_field[i, 0] = -y
             vector_field[i, 1] = x
+
     elif dataset_type == "sine":
         vector_field = np.zeros_like(input_positions)
         for i, pos in enumerate(input_positions):

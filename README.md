@@ -22,6 +22,10 @@ Instructions are in the `ext_theory` Git submodule on how to run the "spiral" ex
 
 Instructions are in the `SIDDA` Git submodule on how to run, including a script for producing the noised version of the dataset and a zenodo link to the default .npy files
 
-## Chemical Properties
+## Chemical Scalar Properties
 
 Run the `run.py` script in `/uq_bleading/`
+
+## Chemical Vector Properties
+
+See the SEGNN submodule. Specific training scripts will be added upon completion of a follow-up work.

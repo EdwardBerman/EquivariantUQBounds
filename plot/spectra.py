@@ -334,7 +334,7 @@ ax[0, 2].plot(methane_spectra, color='black', label=r'f(CH$_4(+))$')
 ax[0, 2].plot(methane_spectra, color='red', label=r'$f(CH_4(\times))$')
 ax[0, 2].plot(methane_spectra, color='blue', label=r'$h(Orbit)$')
 ax[0, 2].legend()
-ax[0, 2].set_title(r'$CH_4(+/\times)$ Transition Spectra')
+ax[0, 2].set_title(r'$CH_4(+/\times)$ Absorption Spectra')
 
 ax[1, 2].plot(water_spectra, color='black', label=r'f(H$_2O)$')
 ax[1, 2].plot(sulfur_dioxide_spectra_x, sulfur_dioxide_spectra_y, color='red', label=r'$f(SO_2)$')
@@ -345,12 +345,12 @@ sulfur_dioxide_y_interpolated = interp_function(water_x)
 average_spectra = (water_spectra + sulfur_dioxide_y_interpolated) / 2
 ax[1, 2].plot(average_spectra, color='blue', label=r'$h(Orbit)$')
 ax[1, 2].legend()
-ax[1, 2].set_title(r'$H_2O/SO_2$ Transition Spectra')
+ax[1, 2].set_title(r'$H_2O/SO_2$ Absorption Spectra')
 
 ax[2, 2].plot(ammonia_spectra, color='black', label=r'f(NH$_3)$')
 ax[2, 2].plot(ammonia_spectra, color='red', label=r'$h(Orbit)$')
 ax[2, 2].legend()
-ax[2, 2].set_title(r'$NH_3$ Transition Spectra')
+ax[2, 2].set_title(r'$NH_3$ Absorption Spectra')
 
 x = np.array([0, 1, 2, 3, 4])
 x_labels = [r'$CH_4(+)$', r'$CH_4(\times)$', r'$H_20$', r'$SO_2$', r'$NH_3$']
@@ -365,7 +365,7 @@ ax[2,0].set_ylabel("p(x)")
 
 x = np.linspace(0, 4000, 4000)
 noise = np.random.uniform(-0.1, 0.1, 4000)
-y = np.sin(2 * np.pi * (1/500)*x) + 1.2 + noise
+y = np.sin(2 * np.pi * (1/2500)*x) + 1.2 + noise
 ax[0, 3].plot(x, y, color='black', label=r'$\vec{\sigma}_1$')
 ax[0, 3].set_yticks([])
 ax[0, 3].set_title(r'$\vec{\sigma^2}_1$')
@@ -375,7 +375,7 @@ ax[1, 3].set_yticks([])
 ax[1, 3].set_title(r'$\vec{\sigma^2}_1$')
 
 shift = 500
-y_new = (np.sin(2 * np.pi * (1/500)*x + shift) + 1.2 + noise) - np.sqrt(2)
+y_new = (np.sin(2 * np.pi * (1/2500)*x + shift) + 1.2 + noise) - np.sqrt(2)
 
 ax[2, 3].plot(x, y_new, color='black', label=r'$\vec{\sigma}_2$')
 ax[2, 3].set_yticks([])

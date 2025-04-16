@@ -158,7 +158,7 @@ ax1[2].plot(methane_spectra, color='black', label=r'$f(CH_4(+))$')
 ax1[2].plot(methane_spectra, color='red',   label=r'$f(CH_4(\times))$')
 ax1[2].plot(methane_spectra, color='blue',  label=r'$h(Orbit)$')
 ax1[2].legend()
-ax1[2].set_title(r'$CH_4(+/\times)$ Transition Spectra')
+ax1[2].set_title(r'$CH_4(+/\times)$ Absorption Spectra')
 
 # ---- Subplot (1,3): sigma plot 1 ----
 x = np.linspace(0,4000,4000)
@@ -222,7 +222,7 @@ ax2[2].plot(water_spectra, color='black', label=r'$f(H_2O)$')
 ax2[2].plot(so2_x, so2_y,  color='red',   label=r'$f(SO_2)$')
 ax2[2].plot(avg_spectra,   color='blue',  label=r'$h(Orbit)$')
 ax2[2].legend()
-ax2[2].set_title(r'$H_2O/SO_2$ Transition Spectra')
+ax2[2].set_title(r'$H_2O/SO_2$ Absorption Spectra')
 
 # ---- subplot (2,3): sigma plot 2 ----
 ax2[3].plot(x, y, color='black')
@@ -273,7 +273,7 @@ ax3[1].set_title(r'$NH_3$')
 ax3[2].plot(ammonia_spectra, color='black', label=r'$f(NH_3)$')
 ax3[2].plot(ammonia_spectra, color='red',   label=r'$h(Orbit)$')
 ax3[2].legend()
-ax3[2].set_title(r'$NH_3$ Transition Spectra')
+ax3[2].set_title(r'$NH_3$ Absorption Spectra')
 
 # ---- subplot (3,3): sigma plot 3 (shifted) ----
 shift = 500

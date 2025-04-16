@@ -163,7 +163,7 @@ ax1[2].set_title(r'$CH_4(+/\times)$ Transition Spectra')
 # ---- Subplot (1,3): sigma plot 1 ----
 x = np.linspace(0,4000,4000)
 noise = np.random.uniform(-0.1, 0.1, 4000)
-y = np.sin(2*np.pi*(1/500)*x) + 1.2 + noise
+y = np.sin(2*np.pi*(1/2500)*x) + 1.2 + noise
 ax1[3].plot(x, y, color='black')
 ax1[3].set_yticks([])
 ax1[3].set_title(r'$\vec{\sigma^2}_1$')
@@ -277,7 +277,7 @@ ax3[2].set_title(r'$NH_3$ Transition Spectra')
 
 # ---- subplot (3,3): sigma plot 3 (shifted) ----
 shift = 500
-y_new = (np.sin(2*np.pi*(1/500)*x + shift) + 1.2 + noise) - np.sqrt(2)
+y_new = (np.sin(2*np.pi*(1/2500)*x + shift) + 1.2 + noise) - np.sqrt(2)
 ax3[3].plot(x, y_new, color='black')
 ax3[3].set_yticks([])
 ax3[3].set_title(r'$\vec{\sigma^2}_2$')
